@@ -4,13 +4,25 @@ Pay once in shielded ZEC. Then every API call carries a token nobody can link ba
 
 Built for ZECATHON 2026, Shielded Payments track.
 
+![Fare architecture](docs/architecture.png)
+
+## Start here
+
+| File | For |
+| --- | --- |
+| `docs/SPEC.md` | The full build spec: decisions, flow, privacy model, failure paths, plan |
+| `AGENTS.md` | Instructions for coding agents: rules, invariants, verified facts, API contract, next tasks |
+| `scanner/README.md` | Running the scanner and the mainnet canary |
+| `token-canary/README.md` | The Privacy Pass proof and signing benchmark |
+
 ## Status
 
 | Part | State |
 | --- | --- |
 | `scanner/` (Rust) | Built, 11 tests green, mainnet canary pending |
-| Issuer (TypeScript) | Oct 24 |
-| Origin middleware and client SDK (TypeScript) | Oct 25 |
+| `token-canary/` (Node) | Passed: 100 tokens, 11 of 11 checks |
+| Issuer (TypeScript) | Oct 24, after the canary |
+| Origin middleware and client SDK (TypeScript) | Oct 24 to 25 |
 | Demo API, agent, server-view panel | Oct 25 |
 
 ## How it works
