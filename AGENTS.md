@@ -33,13 +33,13 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 
 | Part | State |
 | --- | --- |
-| `scanner/` (Rust) | Built. 11 tests green, clippy clean. Mainnet canary pending: the owner runs it. |
+| `scanner/` (Rust) | Built. 11 tests green, clippy clean. Testnet canary pending: the owner runs it. |
 | `token-canary/` (Node) | Passed 11 of 11 checks with 100 tokens. Native signing measured. |
 | Issuer, origin, SDK, demo API, panel | Not started. Blocked on gate 1. |
 
 ## Gates
 
-1. **Zcash canary** (owner runs it on mainnet; testnet first is fine). Pass: `CANARY PASS` with the same txid Zodl shows, plus a second purchase that stays `underpaid`. Until it passes, do not start issuer, origin or SDK work. Fixing scanner bugs the canary reveals is allowed.
+1. **Zcash canary** (owner runs it on testnet for now, `init --network test`). Pass: `CANARY PASS` with the same txid the paying wallet shows, plus a second purchase that stays `underpaid`. Until it passes, do not start issuer, origin or SDK work. Fixing scanner bugs the canary reveals is allowed.
 2. **Token canary.** Passed Oct 23 (`token-canary/canary.mjs`).
 
 ## Locked decisions
@@ -55,7 +55,7 @@ Do not change these without the owner.
 | Demo payer | Ore paying from Zodl. Headless agent wallet is a stretch goal |
 | Demo API | An LLM or search proxy an agent calls in a loop |
 | Proof for judges | Demo merchant's incoming viewing key published |
-| Networks | Offline fixtures and testnet for development; canary and final run on mainnet |
+| Networks | Offline fixtures and testnet for development and the canary (owner, Oct 23). Final run on mainnet unless the owner changes it |
 
 ## Open decisions
 

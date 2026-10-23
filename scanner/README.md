@@ -24,12 +24,12 @@ fare viewing-key                  # incoming-only key to publish for the demo ac
 
 `--server <url>` on `init` picks the lightwalletd. Default: CipherScan's public server for the network.
 
-## Canary (mainnet)
+## Canary (testnet)
 
-1. `fare init --network main`, then move the seed file offline.
+1. `fare init --network test`, then move the seed file offline.
 2. `fare mint --zec 0.001 --label canary`
-3. Pay the printed address from a shielded balance in Zodl. Wait about 3 minutes.
-4. `fare scan --mempool --check-transparent`. Pass = `CANARY PASS` with the same txid Zodl shows.
+3. Pay the printed address from a shielded testnet balance (Zodl if it supports testnet, otherwise another Ironwood-ready testnet wallet). Wait about 3 minutes.
+4. `fare scan --mempool --check-transparent`. Pass = `CANARY PASS` with the same txid the wallet shows.
 5. `fare mint --zec 0.001 --label underpay`, pay 0.0005, `fare scan`. Pass = `underpaid (short 0.0005 ZEC)`.
 
 If the scan reports zero Ironwood actions over hundreds of blocks, the server is not serving Ironwood data: rerun `init` in a new directory with `--server`.

@@ -17,7 +17,7 @@ Fare sells API access for shielded ZEC and redeems it with unlinkable tokens: th
 | Demo payer | Ore paying from Zodl. Headless agent wallet is a stretch goal |
 | Demo API | An LLM or search proxy an agent calls in a loop |
 | Proof for judges | Demo merchant viewing key published, so anyone can verify every purchase |
-| Networks | Offline fixtures and testnet for development; canary and final run on mainnet |
+| Networks | Offline fixtures and testnet for development and the canary (owner, Oct 23). Final run on mainnet unless the owner changes it |
 
 ## Architecture
 
@@ -97,25 +97,25 @@ Every row below is either a test that runs in CI or a step in the demo video, so
 
 ## Canary
 
-The canary passes when a real Zodl payment on mainnet is matched to the right purchase from compact blocks alone. Until it passes, nothing token-shaped gets built.
+The canary passes when a real shielded payment on testnet is matched to the right purchase from compact blocks alone. Until it passes, nothing token-shaped gets built.
 
-The scanner is built and passes 11 tests offline, including real Ironwood note encryption, wrong-pool rejection and two deliberate code breaks the tests caught. The sandbox cannot reach lightwalletd, so the mainnet run is yours. Cost: about 0.0015 ZEC plus fees.
+The scanner is built and passes 11 tests offline, including real Ironwood note encryption, wrong-pool rejection and two deliberate code breaks the tests caught. The sandbox cannot reach lightwalletd, so the testnet run is yours. Cost: testnet coins only. Zodl's testnet support is unverified; if it has none, pay from another Ironwood-ready testnet wallet.
 
 ```
 cd fare/scanner && cargo build --release
 alias fare=./target/release/fare-scanner
-fare init --network main            # writes SEED-MOVE-OFFLINE.txt; move it offline
+fare init --network test            # writes SEED-MOVE-OFFLINE.txt; move it offline
 fare mint --zec 0.001 --label canary
-# Zodl: pay the printed address or URI from shielded balance, wait about 3 minutes
+# Wallet: pay the printed address or URI from shielded balance, wait about 3 minutes
 fare scan --mempool --check-transparent
 fare mint --zec 0.001 --label underpay
-# Zodl: pay 0.0005 to the new address
+# Wallet: pay 0.0005 to the new address
 fare scan
 ```
 
 **Pass:**
 
-- [ ] `CANARY PASS` names the same txid Zodl shows, at diversifier index base+0.
+- [ ] `CANARY PASS` names the same txid the wallet shows, at diversifier index base+0.
 - [ ] The second purchase shows `underpaid (short 0.0005 ZEC)` and never `paid`.
 - [ ] The scan summary says `No transaction lookups` and the pay URI has no memo.
 - [ ] CipherScan shows the transaction with no visible amount or address; screenshot it for the README.
@@ -124,7 +124,7 @@ fare scan
 
 - Zero Ironwood actions over hundreds of blocks: the server is not serving Ironwood data. Retry with `--server` pointed at another Ironwood-ready lightwalletd.
 - The payment shows as unattributed: the index mapping is wrong. Stop and debug before Oct 24 work.
-- Nothing after 3 blocks with Ironwood actions present: check that Zodl paid the exact address minted, then rerun with `--from` set a few blocks lower.
+- Nothing after 3 blocks with Ironwood actions present: check that the wallet paid the exact address minted, then rerun with `--from` set a few blocks lower.
 
 The seed uses the standard ZIP 32 account 0 path, so restoring it in Zodl with the birthday `init` printed should make the canary funds spendable. Not yet tried on a device; check it once before the mainnet demo.
 
@@ -135,7 +135,7 @@ One gate, five build days, submission with a buffer: nothing after the canary st
 **Oct 23 (gate)**
 
 - [x] Scanner: mint, scan, status, viewing key; 11 tests green. Token canary: 100 tokens issued, verified, 11 of 11 refusal and unlinkability checks
-- [ ] Mainnet canary passes (see Canary)
+- [ ] Testnet canary passes (see Canary)
 
 **Oct 24: issuance**
 

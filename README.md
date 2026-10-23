@@ -12,14 +12,14 @@ Built for ZECATHON 2026, Shielded Payments track.
 | --- | --- |
 | `docs/SPEC.md` | The full build spec: decisions, flow, privacy model, failure paths, plan |
 | `AGENTS.md` | Instructions for coding agents: rules, invariants, verified facts, API contract, next tasks |
-| `scanner/README.md` | Running the scanner and the mainnet canary |
+| `scanner/README.md` | Running the scanner and the testnet canary |
 | `token-canary/README.md` | The Privacy Pass proof and signing benchmark |
 
 ## Status
 
 | Part | State |
 | --- | --- |
-| `scanner/` (Rust) | Built, 11 tests green, mainnet canary pending |
+| `scanner/` (Rust) | Built, 11 tests green, testnet canary pending |
 | `token-canary/` (Node) | Passed: 100 tokens, 11 of 11 checks |
 | Issuer (TypeScript) | Oct 24, after the canary |
 | Origin middleware and client SDK (TypeScript) | Oct 24 to 25 |
