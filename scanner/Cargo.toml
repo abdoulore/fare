@@ -1,0 +1,31 @@
+[package]
+name = "fare-scanner"
+version = "0.1.0"
+edition = "2021"
+description = "Fare payment detector: mints a fresh shielded address per purchase and attributes Ironwood payments from compact blocks alone."
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "fare-scanner"
+path = "src/main.rs"
+
+[lib]
+name = "fare_scanner"
+path = "src/lib.rs"
+
+[dependencies]
+zcash_client_backend = { version = "0.25.0", features = ["lightwalletd-tonic", "lightwalletd-tonic-tls-webpki-roots", "lightwalletd-tonic-transport"] }
+orchard = "0.16.0"
+zcash_keys = "0.17.0"
+zcash_protocol = "0.11.0"
+zcash_note_encryption = "0.5.1"
+zip32 = "0.3.0"
+tonic = { version = "0.14", default-features = false, features = ["channel", "tls-ring", "tls-webpki-roots"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+bip0039 = "0.14.2"
+getrandom = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+clap = { version = "4", features = ["derive"] }
+hex = "0.4"
+anyhow = "1"
