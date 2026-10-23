@@ -1,0 +1,51 @@
+name: Testnet canary
+
+# Manual run of gate 1 against testnet. Rebuilds the canary merchant from its viewing
+# key (repository secret FARE_TESTNET_UFVK), mints the same two purchases at indices
+# base+0 and base+1, and scans. Addresses depend only on the key and the index, so
+# they match the ones handed to the payer. The runner never holds a seed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "Scan from this height (leave empty to only print the current tip)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scanner
+    env:
+      SERVER: https://testnet.zec.rocks:443
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: scanner
+      - run: cargo build --release --locked
+      - name: Rebuild merchant from the viewing key
+        env:
+          FARE_TESTNET_UFVK: ${{ secrets.FARE_TESTNET_UFVK }}
+        run: |
+          test -n "$FARE_TESTNET_UFVK" || { echo "secret FARE_TESTNET_UFVK is not set"; exit 1; }
+          ./target/release/fare-scanner init --network test --server "$SERVER" --ufvk "$FARE_TESTNET_UFVK"
+          ./target/release/fare-scanner mint --zec 0.001 --label canary
+          ./target/release/fare-scanner mint --zec 0.001 --label underpay
+      - name: Scan
+        env:
+          FROM: ${{ inputs.from }}
+        run: |
+          if [ -n "$FROM" ]; then
+            case "$FROM" in *[!0-9]*) echo "from must be a block height"; exit 1;; esac
+            ./target/release/fare-scanner scan --mempool --check-transparent --from "$FROM"
+          else
+            ./target/release/fare-scanner scan --mempool --check-transparent
+          fi
