@@ -16,7 +16,7 @@ Every service listens on loopback. Only Caddy is reachable from outside. Caddy k
 ## What you need
 
 - A Debian 12 or Ubuntu 24.04 server with 2 GB of memory or more (the Rust build needs it), ports 80 and 443 open, and outbound access to `testnet.zec.rocks:443`.
-- A domain with four DNS records pointing at it: `DOMAIN`, `api.DOMAIN`, `issuer.DOMAIN`, `payer.DOMAIN`.
+- A domain with four DNS records pointing at it: `DOMAIN`, `api.DOMAIN`, `issuer.DOMAIN`, `payer.DOMAIN`. **DNS only, no CDN proxy** (in Cloudflare: grey cloud). A proxy that terminates TLS would see purchase ids and tokens in plaintext, each with the visitor's IP, and could link them; Cloudflare's proxy also adds a NEL header that makes browsers report to a third party (owner decision, Oct 24). Caddy gets its own certificates.
 - The merchant's full viewing key (the `FARE_TESTNET_UFVK` repository secret).
 - The demo payer's testnet seed phrase (the `FARE_PAYER_SEED` secret). Testnet only.
 - Optional: an `ANTHROPIC_API_KEY` for real answers. Without one, every answer says "simulated".
