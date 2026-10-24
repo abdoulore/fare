@@ -7,6 +7,20 @@ export interface Minted {
   pay_uri: string;
 }
 
+export interface LedgerRow {
+  index: number;
+  price_zat: number | null;
+  received_zat: number;
+  payments: number;
+  height: number | null;
+  status: string;
+}
+
+export interface Ledger {
+  scanned_to: number | null;
+  rows: LedgerRow[];
+}
+
 export interface ScannerStatus {
   status: 'pending' | 'in_mempool' | 'confirming' | 'paid' | 'underpaid';
   leaky_funding: boolean;
@@ -53,5 +67,23 @@ export class ScannerClient {
       throw new ScannerUnavailable('scanner sent an unknown status');
     }
     return { status: body.status as ScannerStatus['status'], leaky_funding: body.leaky_funding === true };
+  }
+
+  private async getJson(path: string): Promise<unknown> {
+    const res = await this.call(path);
+    if (res.status !== 200) throw new ScannerUnavailable(`scanner ${path} failed (${res.status})`);
+    return res.json();
+  }
+
+  /** Purchases by index offset, with no ids: the scanner's GET /ledger. */
+  async ledger(): Promise<Ledger> {
+    const body = (await this.getJson('/ledger')) as Partial<Ledger>;
+    if (!Array.isArray(body.rows)) throw new ScannerUnavailable('scanner sent a malformed ledger');
+    return { scanned_to: typeof body.scanned_to === 'number' ? body.scanned_to : null, rows: body.rows };
+  }
+
+  async health(): Promise<{ scanned_to: number | null }> {
+    const body = (await this.getJson('/health')) as { scanned_to?: unknown };
+    return { scanned_to: typeof body.scanned_to === 'number' ? body.scanned_to : null };
   }
 }

@@ -3,6 +3,11 @@
 //   GET  /.well-known/private-token-issuer-directory   RFC 9578 issuer directory
 //   POST /fare/purchases   {pack, blinded: [N serialized TokenRequests]}  -> 201 {purchase_id, pay_uri, expires_at}
 //   GET  /fare/purchases/{id}   {status}; once paid {status: "paid", signatures: [N]}
+//   GET  /fare/ledger      purchases by index, amount, height and status, plus tokens issued
+//                          per key. No purchase ids: they fetch signatures.
+//   GET  /health           key id, epoch and the scanner's height
+//
+// CORS: origins in `webOrigins` may call it from a browser.
 //
 // The issuer sees purchases and blinded messages, never tokens (invariant 7). It logs
 // nothing about requests (invariant 8).
@@ -11,9 +16,10 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { publicVerif } from '@cloudflare/privacypass-ts';
 
+import { cors } from './cors.ts';
 import { PACK, PRICE_ZAT, PURCHASE_TTL_SECONDS, TOKEN_REQUEST_BYTES } from './config.ts';
 import { KeyRing } from './keys.ts';
-import { ScannerClient, ScannerUnavailable } from './scanner.ts';
+import { ScannerClient, ScannerUnavailable, type Ledger } from './scanner.ts';
 import { blindSign, SignError } from './sign.ts';
 import { PurchaseStore } from './store.ts';
 
@@ -21,6 +27,8 @@ const { BLIND_RSA, TokenRequest, TokenResponse } = publicVerif;
 
 export const DIRECTORY_PATH = '/.well-known/private-token-issuer-directory';
 export const PURCHASES_PATH = '/fare/purchases';
+export const LEDGER_PATH = '/fare/ledger';
+const LEDGER_CACHE_MS = 5_000;
 const MAX_BODY_BYTES = 256 * 1024;
 const B64URL = /^[A-Za-z0-9_-]+$/;
 const PURCHASE_ID = /^[0-9a-f]{32}$/;
@@ -30,6 +38,8 @@ export interface IssuerOptions {
   scannerUrl: string;
   /** Unix seconds; injectable for tests. */
   now?: () => number;
+  /** Browser origins allowed by CORS. */
+  webOrigins?: readonly string[];
 }
 
 class HttpError extends Error {
@@ -153,6 +163,7 @@ export function createIssuer(opts: IssuerOptions) {
         if (e instanceof SignError) throw new HttpError(500, 'signing_failed');
         throw e;
       }
+      store.markSigned(record.id);
       const body: Record<string, unknown> = { status: 'paid', signatures };
       // Invariant 11: flagged, never silently accepted.
       if (status.leaky_funding) body.warning = 'funded_from_transparent_inputs';
@@ -166,9 +177,53 @@ export function createIssuer(opts: IssuerOptions) {
     send(res, 200, { status: status.status });
   }
 
+  let ledgerCache: { at: number; body: unknown } | undefined;
+
+  /** What the published viewing key shows, plus status and tokens issued per key. */
+  async function ledger(res: ServerResponse): Promise<void> {
+    if (!ledgerCache || Date.now() - ledgerCache.at > LEDGER_CACHE_MS) {
+      let scanned: Ledger;
+      try {
+        scanned = await scanner.ledger();
+      } catch (e) {
+        if (e instanceof ScannerUnavailable) throw new HttpError(503, 'scanner_unavailable');
+        throw e;
+      }
+      const t = now();
+      const signed = store.signedByEpoch();
+      const keyList = (await keys.live(t)).map((k) => ({
+        key_id: Buffer.from(k.keyId).toString('hex'),
+        epoch: k.epoch,
+        not_before: k.notBefore,
+        retires_at: k.retiresAt,
+        packs: signed.get(k.epoch) ?? 0,
+        issued: (signed.get(k.epoch) ?? 0) * PACK,
+      }));
+      ledgerCache = { at: Date.now(), body: { scanned_to: scanned.scanned_to, rows: scanned.rows, keys: keyList, pack: PACK, price_zat: PRICE_ZAT } };
+    }
+    send(res, 200, ledgerCache.body);
+  }
+
+  async function health(res: ServerResponse): Promise<void> {
+    const key = await keys.current(now());
+    const scanned = await scanner.health().catch(() => undefined);
+    send(res, 200, {
+      ok: scanned !== undefined,
+      key_id: Buffer.from(key.keyId).toString('hex'),
+      epoch: key.epoch,
+      retires_at: key.retiresAt,
+      scanned_to: scanned?.scanned_to ?? null,
+    });
+  }
+
   async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const path = (req.url ?? '/').split('?')[0];
     try {
+      if (cors(req, res, opts.webOrigins ?? [])) return;
+      if (path === LEDGER_PATH || path === '/health') {
+        if (req.method !== 'GET') throw new HttpError(405, 'method_not_allowed');
+        return await (path === LEDGER_PATH ? ledger(res) : health(res));
+      }
       if (path === DIRECTORY_PATH) {
         if (req.method !== 'GET') throw new HttpError(405, 'method_not_allowed');
         return await directory(res);

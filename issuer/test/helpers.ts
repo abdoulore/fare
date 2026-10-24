@@ -50,6 +50,15 @@ export async function stubScanner(): Promise<StubScanner> {
       res.end(JSON.stringify({ purchase_id: id, index: 1, address: `utest1stub${stub.mints}`, pay_uri: `zcash:utest1stub${stub.mints}?amount=0.001` }));
       return;
     }
+    if (req.method === 'GET' && req.url === '/health') {
+      res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ scanned_to: 4_600_000, purchases: stub.mints }));
+      return;
+    }
+    if (req.method === 'GET' && req.url === '/ledger') {
+      const rows = [...stub.statuses.values()].map((s, i) => ({ index: i, price_zat: 100_000, received_zat: 0, payments: 0, height: null, status: s.status }));
+      res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ scanned_to: 4_600_000, rows }));
+      return;
+    }
     const m = /^\/purchases\/([0-9a-f]+)$/.exec(req.url ?? '');
     const s = m && stub.statuses.get(m[1]);
     if (req.method === 'GET' && s) {
@@ -74,9 +83,11 @@ export interface TestIssuer {
   close(): Promise<void>;
 }
 
+export const WEB_ORIGIN = 'http://web.fare.test';
+
 export async function startIssuer(scannerUrl: string, dataDir = tempDir(), now = Math.floor(Date.now() / 1000)): Promise<TestIssuer> {
   const clock = { now };
-  const issuer = createIssuer({ dataDir, scannerUrl, now: () => clock.now });
+  const issuer = createIssuer({ dataDir, scannerUrl, now: () => clock.now, webOrigins: [WEB_ORIGIN] });
   const server = createServer((req, res) => void issuer.handle(req, res));
   const url = await listen(server);
   const close = () =>

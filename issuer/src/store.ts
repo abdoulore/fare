@@ -15,6 +15,8 @@ export interface PurchaseRecord {
   pay_uri: string;
   /** Unix seconds. */
   expires_at: number;
+  /** Set once signatures were first released. Counts tokens issued per key, nothing more. */
+  signed?: true;
 }
 
 export class PurchaseStore {
@@ -35,10 +37,29 @@ export class PurchaseStore {
   /** Saved to disk before it is visible, so an answered purchase survives a restart. */
   add(record: PurchaseRecord): void {
     if (this.records.has(record.id)) throw new Error('duplicate purchase id');
-    const next = [...this.records.values(), record];
-    const tmp = `${this.path}.tmp`;
-    writeFileSync(tmp, JSON.stringify(next), { mode: 0o600 });
-    renameSync(tmp, this.path);
+    this.write([...this.records.values(), record]);
     this.records.set(record.id, record);
+  }
+
+  /** Marks a purchase as signed. Idempotent. */
+  markSigned(id: string): void {
+    const r = this.records.get(id);
+    if (!r || r.signed) return;
+    const next = { ...r, signed: true as const };
+    this.write([...this.records.values()].map((x) => (x.id === id ? next : x)));
+    this.records.set(id, next);
+  }
+
+  /** Signed packs per key epoch. */
+  signedByEpoch(): Map<number, number> {
+    const out = new Map<number, number>();
+    for (const r of this.records.values()) if (r.signed) out.set(r.epoch, (out.get(r.epoch) ?? 0) + 1);
+    return out;
+  }
+
+  private write(list: PurchaseRecord[]): void {
+    const tmp = `${this.path}.tmp`;
+    writeFileSync(tmp, JSON.stringify(list), { mode: 0o600 });
+    renameSync(tmp, this.path);
   }
 }

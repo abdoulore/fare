@@ -7,7 +7,7 @@ import { publicVerif } from '@cloudflare/privacypass-ts';
 
 import { PACK, GRACE_SECONDS, EPOCH_SECONDS } from '../src/config.ts';
 import { epochStart } from '../src/keys.ts';
-import { blind, json, MODE, ORIGIN_NAME, startIssuer, stubScanner, tempDir, type StubScanner, type TestIssuer } from './helpers.ts';
+import { blind, json, MODE, ORIGIN_NAME, startIssuer, stubScanner, tempDir, WEB_ORIGIN, type StubScanner, type TestIssuer } from './helpers.ts';
 
 const { Origin, TokenResponse } = publicVerif;
 
@@ -207,11 +207,70 @@ test('wrong methods and paths', async () => {
   assert.equal((await fetch(`${issuer.url}/admin`)).status, 404);
 });
 
+test('CORS: the web origin may read responses, other origins get nothing', async () => {
+  const dirUrl = `${issuer.url}/.well-known/private-token-issuer-directory`;
+  const ok = await fetch(dirUrl, { headers: { origin: WEB_ORIGIN } });
+  assert.equal(ok.headers.get('access-control-allow-origin'), WEB_ORIGIN);
+  assert.match(ok.headers.get('access-control-expose-headers') ?? '', /WWW-Authenticate.*Fare-Offer.*Retry-After/);
+  assert.equal(ok.headers.get('vary'), 'Origin');
+  const other = await fetch(dirUrl, { headers: { origin: 'https://evil.example' } });
+  assert.equal(other.status, 200);
+  assert.equal(other.headers.get('access-control-allow-origin'), null);
+
+  const pre = await fetch(`${issuer.url}/fare/purchases`, { method: 'OPTIONS', headers: { origin: WEB_ORIGIN, 'access-control-request-method': 'POST' } });
+  assert.equal(pre.status, 204);
+  assert.equal(pre.headers.get('access-control-allow-origin'), WEB_ORIGIN);
+  assert.match(pre.headers.get('access-control-allow-headers') ?? '', /content-type/);
+  assert.equal(pre.headers.get('access-control-allow-credentials'), null, 'no credentials');
+  const badPre = await fetch(`${issuer.url}/fare/purchases`, { method: 'OPTIONS', headers: { origin: 'https://evil.example' } });
+  assert.equal(badPre.status, 204);
+  assert.equal(badPre.headers.get('access-control-allow-methods'), null);
+});
+
+test('the public ledger carries no purchase id and counts tokens issued per key', async () => {
+  const bought = await buy();
+  scanner.statuses.set(bought.purchase_id, { status: 'paid' });
+  await json(await status(bought.purchase_id));
+  await new Promise((r) => setTimeout(r, 5_100)); // past the ledger cache
+  const res = await fetch(`${issuer.url}/fare/ledger`);
+  assert.equal(res.status, 200);
+  const text = await res.text();
+  for (const id of scanner.statuses.keys()) assert.ok(!text.includes(id), 'no purchase id in the ledger');
+  assert.ok(!text.includes('zcash:'), 'no pay URI in the ledger');
+  const body = JSON.parse(text);
+  assert.equal(body.scanned_to, 4_600_000);
+  assert.equal(body.pack, PACK);
+  assert.ok(body.rows.length >= 1);
+  const [key] = body.keys;
+  assert.match(key.key_id, /^[0-9a-f]{64}$/);
+  assert.equal(key.issued, key.packs * PACK);
+  assert.ok(key.packs >= 1, 'signed packs are counted');
+
+  const health = await json(await fetch(`${issuer.url}/health`));
+  assert.equal(health.ok, true);
+  assert.equal(health.key_id, key.key_id);
+  assert.equal(health.scanned_to, 4_600_000);
+  assert.equal((await fetch(`${issuer.url}/fare/ledger`, { method: 'POST' })).status, 405);
+});
+
+test('ledger and health say so when the scanner is down', async () => {
+  scanner.down = true;
+  try {
+    const health = await json(await fetch(`${issuer.url}/health`));
+    assert.equal(health.ok, false);
+    assert.equal(health.scanned_to, null);
+  } finally {
+    scanner.down = false;
+  }
+});
+
 test('purchases on disk hold no client data and no signatures', () => {
   const records = JSON.parse(readFileSync(join(dataDir, 'purchases.json'), 'utf8')) as Record<string, unknown>[];
   assert.ok(records.length > 0);
   for (const r of records) {
-    assert.deepEqual(Object.keys(r).sort(), ['epoch', 'expires_at', 'id', 'pay_uri', 'requests']);
+    const fields = Object.keys(r).filter((k) => k !== 'signed').sort();
+    assert.deepEqual(fields, ['epoch', 'expires_at', 'id', 'pay_uri', 'requests']);
+    assert.ok(r.signed === undefined || r.signed === true);
   }
 });
 
