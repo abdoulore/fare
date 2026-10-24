@@ -105,6 +105,7 @@ export function createOrigin(opts: OriginOptions) {
   /** The 402 headers: challenge under the newest key, and the offer. */
   async function challengeHeaders(): Promise<Record<string, string>> {
     await refresh();
+    stats.challenged += 1;
     return {
       'www-authenticate': new WWWAuthenticateHeader(challenge, live[0].tokenKey).toString(),
       'fare-offer': JSON.stringify({ pack: opts.pack, price_zec: opts.priceZec, issuer: opts.issuerUrl }),
@@ -159,7 +160,6 @@ export function createOrigin(opts: OriginOptions) {
       try {
         const auth = req.headers.authorization;
         if (!auth) {
-          stats.challenged += 1;
           res.writeHead(402, { ...(await challengeHeaders()), 'content-type': 'application/json' });
           res.end(JSON.stringify({ error: 'payment_required' }));
           return;
