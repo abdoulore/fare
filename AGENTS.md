@@ -33,7 +33,7 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 
 | Part | State |
 | --- | --- |
-| `scanner/` (Rust) | Built. 19 tests green, clippy clean. `check` makes the canary fail when it fails. |
+| `scanner/` (Rust) | Built. 29 tests green, clippy clean. `serve` added Oct 24; testnet proof pending. |
 | `wallet/` (Rust) | Built Oct 24. 26 tests green, clippy clean. Paid both canary purchases on testnet. |
 | `token-canary/` (Node) | Passed 11 of 11 checks with 100 tokens. Native signing measured. |
 | Issuer, origin, SDK, demo API, panel | Not started. Gate 1 passed; next up. |
@@ -84,9 +84,12 @@ fare/
     src/store.rs       state.json, Purchase, Payment, Status
     src/lwd.rs         lightwalletd: tip, block range, mempool; nothing targeted
     src/zec.rs         exact ZEC parsing, no floats
-    src/main.rs        CLI: init, mint, scan, status, viewing-key
+    src/service.rs     fetch and commit a scan, mint, the follow loop
+    src/http.rs        serve: loopback-only mint and status routes
+    src/main.rs        CLI: init, mint, scan, status, check, serve, viewing-key
     tests/attribution.rs   real note encryption through the scanner
     tests/check.rs         the canary verdict
+    tests/serve.rs         serve handlers, reorg rescan, loopback rule
     tests/invariants.rs    source checks that fail the build on leaks
   wallet/              Rust: fare-wallet, headless testnet payer
     src/request.rs     which zcash: URIs it pays (one shielded recipient, no memo, under --max-zec)
@@ -95,7 +98,7 @@ fare/
     src/cache.rs       in-memory BlockCache for sync::run
     tests/             refusals, CLI, source invariants
   token-canary/        Node: Privacy Pass proof (canary.mjs, native-sign.mjs)
-  .github/workflows/   ci.yml, testnet-canary.yml, testnet-wallet.yml
+  .github/workflows/   ci.yml, testnet-canary.yml, testnet-wallet.yml, testnet-serve.yml
 ```
 
 Planned, create as needed: `issuer/` (TypeScript: purchases API, epoch keys, issuer directory), `origin/` (TypeScript: 402 middleware, verify, spent-nonce store), `sdk/` (TypeScript client), `demo/` (demo API and agent loop), `panel/` (server-view panel).
@@ -114,6 +117,7 @@ cargo clippy --all-targets       # must stay clean
 ./target/release/fare-scanner status
 ./target/release/fare-scanner check --paid LABEL [--paid ...] --underpaid LABEL [...]
 ./target/release/fare-scanner viewing-key
+./target/release/fare-scanner serve [--listen 127.0.0.1:7077] [--interval 15] [--reorg-depth 10]
 
 cd wallet                        # FARE_PAYER_SEED in the environment, testnet phrase only
 cargo test && cargo clippy --all-targets -- -D warnings
@@ -187,7 +191,7 @@ From the spec. Keep these shapes.
 - `POST /fare/purchases` with `{pack, blinded: [base64url, ...N]}` returns `201 {purchase_id, pay_uri, expires_at}`. `purchase_id` is 128 random bits, hex.
 - `GET /fare/purchases/{id}` returns `{status}`; once paid, `{status: "paid", signatures: [base64url, ...N]}` in request order.
 - Redemption: `Authorization: PrivateToken token="<base64url>"`. Failures return `401` with one of `token_reused`, `bad_signature`, `unknown_key`, `wrong_challenge`, `expired_epoch`.
-- Scanner sidecar (`fare-scanner serve`, to build): bind `127.0.0.1` only. `POST /mint {price_zat}` returns `{purchase_id, index, address, pay_uri}`; `GET /purchases/{id}` returns `{status, received_zat, payments}`. Scanner ids are 64-bit today; move to 128-bit when building `serve`.
+- Scanner sidecar (`fare-scanner serve`): loopback only. `POST /mint {price_zat}` returns `201 {purchase_id, index, address, pay_uri}`; `GET /purchases/{id}` returns `{status, received_zat, payments, price_zat, leaky_funding, scanned_to, required_confirmations}`. `status` is one of `pending`, `in_mempool`, `confirming`, `paid`, `underpaid`. Ids are 128 bits, hex. Errors are `{error}` with 400 or 404.
 
 ## Next tasks, after gate 1
 

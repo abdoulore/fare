@@ -74,6 +74,17 @@ pub enum Status {
 }
 
 impl Status {
+    /// Stable machine-readable form, used by `serve`.
+    pub fn code(&self) -> &'static str {
+        match self {
+            Status::Pending => "pending",
+            Status::InMempool { .. } => "in_mempool",
+            Status::Confirming { .. } => "confirming",
+            Status::Paid { .. } => "paid",
+            Status::Underpaid { .. } => "underpaid",
+        }
+    }
+
     pub fn label(&self) -> String {
         match self {
             Status::Pending => "pending".into(),
@@ -163,6 +174,25 @@ impl State {
         let j = self.merchant.next_index;
         self.merchant.next_index += 1;
         j
+    }
+
+    /// Drops what a rescan starting at `height` will report again: payments mined at or
+    /// above it and, when `mempool` is true, every mempool-only sighting. A payment whose
+    /// block a reorg removed then disappears instead of lingering. Returns how many went.
+    pub fn forget_from(&mut self, height: u64, mempool: bool) -> usize {
+        let stale = |p: &Payment| match p.height {
+            Some(h) => h >= height,
+            None => mempool,
+        };
+        let mut dropped = 0;
+        for purchase in &mut self.purchases {
+            let before = purchase.payments.len();
+            purchase.payments.retain(|p| !stale(p));
+            dropped += before - purchase.payments.len();
+        }
+        let before = self.unattributed.len();
+        self.unattributed.retain(|u| !stale(&u.payment));
+        dropped + before - self.unattributed.len()
     }
 
     /// Records detections. Idempotent: the same (txid, pool, action) is stored once, and a

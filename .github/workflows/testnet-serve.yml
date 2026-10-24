@@ -1,0 +1,126 @@
+name: Testnet serve
+
+# Proves fare-scanner serve on testnet: a purchase minted over HTTP flips to paid after
+# a real payment from fare-wallet.
+#
+# The merchant state is cached between runs, so serve never mints an index twice. A
+# cold start re-reserves base+0 and base+1, which the canary uses. state.json holds the
+# merchant's viewing key, never a seed; the cache is readable only by this repo's
+# workflows.
+
+on:
+  workflow_dispatch:
+    inputs:
+      payer_birthday:
+        description: "Payer wallet birthday height"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  serve:
+    runs-on: ubuntu-latest
+    env:
+      SERVER: https://testnet.zec.rocks:443
+      PAYER_BIRTHDAY: ${{ inputs.payer_birthday }}
+      SCANNER: ./scanner/target/release/fare-scanner
+      WALLET: ./wallet/target/release/fare-wallet
+      SIDECAR: http://127.0.0.1:7077
+    steps:
+      - name: Validate inputs
+        run: case "$PAYER_BIRTHDAY" in ''|*[!0-9]*) echo "payer_birthday must be a block height"; exit 1;; esac
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            scanner
+            wallet
+      - name: Build
+        run: |
+          cargo build --release --locked --manifest-path scanner/Cargo.toml
+          cargo build --release --locked --manifest-path wallet/Cargo.toml
+
+      - name: Restore merchant state
+        uses: actions/cache/restore@v4
+        with:
+          path: fare-data
+          key: fare-merchant-test-${{ github.run_id }}
+          restore-keys: fare-merchant-test-
+      - name: Restore payer wallet database
+        uses: actions/cache@v4
+        with:
+          path: wallet/fare-wallet-data
+          key: fare-wallet-db-test-${{ inputs.payer_birthday }}-${{ github.run_id }}
+          restore-keys: fare-wallet-db-test-${{ inputs.payer_birthday }}-
+      - name: Merchant
+        env:
+          FARE_TESTNET_UFVK: ${{ secrets.FARE_TESTNET_UFVK }}
+        run: |
+          if [ ! -f fare-data/state.json ]; then
+            test -n "$FARE_TESTNET_UFVK" || { echo "secret FARE_TESTNET_UFVK is not set"; exit 1; }
+            $SCANNER init --network test --server "$SERVER" --ufvk "$FARE_TESTNET_UFVK"
+            # Reserve the canary's indices so serve never hands them out again.
+            $SCANNER mint --zec 0.001 --label canary
+            $SCANNER mint --zec 0.001 --label underpay
+          fi
+          echo "next index offset: $(jq '.merchant.next_index - 1099511627776' fare-data/state.json)"
+
+      - name: Start serve
+        run: |
+          $SCANNER serve --interval 15 > serve.log 2>&1 &
+          code=000
+          for _ in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$SIDECAR/purchases/00000000000000000000000000000000") || true
+            [ "$code" = 404 ] && break
+            sleep 1
+          done
+          echo "unknown purchase -> $code"
+          test "$code" = 404 || { echo "sidecar not answering"; cat serve.log; exit 1; }
+
+      - name: Refusals
+        run: |
+          for body in '{"price_zat":0}' '{"price_zat":"1"}' '{"price_zat":1,"label":"x"}' 'nope'; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$SIDECAR/mint" -d "$body")
+            echo "mint $body -> $code"
+            test "$code" = 400
+          done
+
+      - name: Mint over HTTP
+        run: |
+          curl -sf -X POST "$SIDECAR/mint" -d '{"price_zat":100000}' > mint.json
+          jq . mint.json
+          echo "ID=$(jq -r .purchase_id mint.json)" >> "$GITHUB_ENV"
+          echo "URI=$(jq -r .pay_uri mint.json)" >> "$GITHUB_ENV"
+      - name: Status before paying
+        run: curl -sf "$SIDECAR/purchases/$ID" | tee before.json && test "$(jq -r .status before.json)" = pending
+
+      - name: Pay from fare-wallet
+        env:
+          FARE_PAYER_SEED: ${{ secrets.FARE_PAYER_SEED }}
+        run: |
+          test -n "$FARE_PAYER_SEED" || { echo "secret FARE_PAYER_SEED is not set"; exit 1; }
+          W="$WALLET --dir wallet/fare-wallet-data --server $SERVER"
+          $W init --birthday "$PAYER_BIRTHDAY"
+          $W pay "$URI" --max-zec 0.001 --wait-secs 600
+
+      - name: Wait for paid
+        run: |
+          for _ in $(seq 1 60); do
+            status=$(curl -sf "$SIDECAR/purchases/$ID" | jq -r .status)
+            echo "status: $status"
+            [ "$status" = paid ] && break
+            sleep 15
+          done
+          curl -sf "$SIDECAR/purchases/$ID" | tee after.json | jq .
+          echo "--- serve log"
+          cat serve.log
+          test "$(jq -r .status after.json)" = paid
+
+      - name: Save merchant state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: fare-data
+          key: fare-merchant-test-${{ github.run_id }}

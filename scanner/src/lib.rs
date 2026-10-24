@@ -7,8 +7,10 @@
 //! - It never needs a memo. A payment is matched to its purchase by the diversifier
 //!   index of the address it was sent to.
 
+pub mod http;
 pub mod keys;
 pub mod lwd;
 pub mod scan;
+pub mod service;
 pub mod store;
 pub mod zec;

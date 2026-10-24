@@ -25,6 +25,20 @@ fare viewing-key                  # incoming-only key to publish for the demo ac
 
 `--server <url>` on `init` picks the lightwalletd. Default: `testnet.zec.rocks` on testnet, CipherScan on mainnet. CipherScan's testnet server currently presents a certificate for another host name.
 
+## serve (the issuer's sidecar)
+
+```
+fare serve [--listen 127.0.0.1:7077] [--interval 15] [--reorg-depth 10]
+curl -X POST localhost:7077/mint -d '{"price_zat":100000}'
+curl localhost:7077/purchases/<purchase_id>
+```
+
+- Loopback only: any other listen address is refused, because the sidecar has no authentication.
+- `POST /mint` saves the purchase before answering. Ids are 128 random bits, hex.
+- `GET /purchases/{id}` gives `status` (`pending`, `in_mempool`, `confirming`, `paid`, `underpaid`), `received_zat`, `payments`, `leaky_funding`.
+- The follow loop scans from the saved cursor every `--interval` seconds, rescanning the last `--reorg-depth` blocks. Payments in that window are forgotten and re-recorded, so one a reorg removed disappears instead of lingering.
+- It logs heights and counts only: no request data, no purchase ids.
+
 ## Canary (testnet)
 
 The canary runs on a GitHub runner: `.github/workflows/testnet-canary.yml` with `pay: true`. It rebuilds the merchant from its viewing key (secret `FARE_TESTNET_UFVK`), mints `canary` and `underpay`, pays them 0.001 and 0.0005 from `fare-wallet` (see `wallet/README.md`), scans, then runs:
@@ -59,4 +73,4 @@ Not yet proven: the live network path. That is the canary.
 cargo test
 ```
 
-19 tests: the canary verdict across 8 cases (pass, pending, mempool only, underpaid listed as paid, paid listed as underpaid, unknown label, repeated label, no scan yet), exact ZEC parsing, attribution across 8 cases (exact, underpaid, Orchard list, foreign key, wrong-pool note, wallet's own address, transparent-funded, note hidden between decoys), mempool then confirmation then overpayment, address round trip, key encoding, seed generation, three source invariants.
+29 tests: serve handlers and reorg rescans (9), the canary verdict across 8 cases (pass, pending, mempool only, underpaid listed as paid, paid listed as underpaid, unknown label, repeated label, no scan yet), exact ZEC parsing, attribution across 8 cases (exact, underpaid, Orchard list, foreign key, wrong-pool note, wallet's own address, transparent-funded, note hidden between decoys), mempool then confirmation then overpayment, address round trip, key encoding, seed generation, four source invariants.

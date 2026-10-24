@@ -50,3 +50,17 @@ fn payment_requests_carry_no_memo() {
         assert!(!src.contains("memo="), "{path} builds a payment request with a memo");
     }
 }
+
+/// The sidecar logs nothing about requests: no peer address, no timing next to an id.
+#[test]
+fn serve_logs_nothing_about_requests() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let http = fs::read_to_string(dir.join("http.rs")).unwrap();
+    for banned in ["println!", "eprintln!", "tracing", "ConnectInfo", "TraceLayer"] {
+        assert!(!http.contains(banned), "http.rs uses {banned}");
+    }
+    let service = fs::read_to_string(dir.join("service.rs")).unwrap();
+    for line in service.lines().filter(|l| l.contains("println!") || l.contains("eprintln!")) {
+        assert!(!line.contains(".id") && !line.contains("purchase"), "service.rs logs a purchase: {line}");
+    }
+}

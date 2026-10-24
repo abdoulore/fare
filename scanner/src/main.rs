@@ -1,13 +1,16 @@
+use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::{anyhow, bail, Context, Result};
 use clap::{Parser, Subcommand};
 
 use fare_scanner::keys::{self, PURCHASE_INDEX_BASE};
 use fare_scanner::lwd;
-use fare_scanner::scan::Detector;
-use fare_scanner::store::{self, Merchant, Purchase, State, Status};
+use fare_scanner::http;
+use fare_scanner::service;
+use fare_scanner::store::{self, Merchant, State, Status};
 use fare_scanner::zec::{format_zec, parse_zec};
 
 #[derive(Parser)]
@@ -73,6 +76,19 @@ enum Cmd {
     },
     /// Print the unified incoming viewing key to publish for the demo account.
     ViewingKey,
+    /// Run the issuer's sidecar: mint and status over loopback HTTP, with a follow loop
+    /// that scans from a saved cursor and rescans recent blocks for reorgs.
+    Serve {
+        /// Loopback address to listen on.
+        #[arg(long, default_value = "127.0.0.1:7077")]
+        listen: SocketAddr,
+        /// Seconds between scans.
+        #[arg(long, default_value_t = 15)]
+        interval: u64,
+        /// Blocks below the cursor scanned again on every pass.
+        #[arg(long, default_value_t = 10)]
+        reorg_depth: u64,
+    },
 }
 
 #[tokio::main]
@@ -98,6 +114,7 @@ async fn main() -> Result<()> {
             println!("CHECK PASS");
             Ok(())
         }
+        Cmd::Serve { listen, interval, reorg_depth } => serve(&cli.dir, listen, interval, reorg_depth).await,
         Cmd::ViewingKey => {
             let state = store::load(&cli.dir)?;
             let net = keys::parse_network(&state.merchant.network)?;
@@ -176,10 +193,6 @@ async fn init(
 async fn mint(dir: &Path, zec: &str, label: Option<String>) -> Result<()> {
     let price = parse_zec(zec)?;
     let mut state = store::load(dir)?;
-    let net = keys::parse_network(&state.merchant.network)?;
-    let ufvk = keys::decode_ufvk(&net, &state.merchant.ufvk)?;
-    let vk = keys::viewing_keys(&ufvk)?;
-
     let created_height = match lwd::connect(&state.merchant.server).await {
         Ok(mut c) => lwd::tip(&mut c).await?,
         Err(e) => {
@@ -188,29 +201,14 @@ async fn mint(dir: &Path, zec: &str, label: Option<String>) -> Result<()> {
             fallback
         }
     };
-
-    let index = state.allocate_index();
-    let address = keys::encode_shielded_only(&net, keys::purchase_address(&vk.ivk, index))?;
-    let pay_uri = format!("zcash:{address}?amount={}", format_zec(price));
-    let id = random_id()?;
-    state.purchases.push(Purchase {
-        id: id.clone(),
-        index,
-        price_zat: price,
-        address: address.clone(),
-        pay_uri: pay_uri.clone(),
-        label,
-        created_unix: now_unix(),
-        created_height,
-        payments: Vec::new(),
-    });
+    let p = service::mint(&mut state, price, label, created_height)?;
     store::save(dir, &state)?;
 
-    println!("Purchase {id}");
+    println!("Purchase {}", p.id);
     println!("  price     {} ZEC", format_zec(price));
-    println!("  index     base+{}", index - PURCHASE_INDEX_BASE);
-    println!("  address   {address}");
-    println!("  pay URI   {pay_uri}");
+    println!("  index     base+{}", service::index_offset(p.index));
+    println!("  address   {}", p.address);
+    println!("  pay URI   {}", p.pay_uri);
     println!();
     println!("Pay it from a shielded balance, then run `fare-scanner scan`.");
     Ok(())
@@ -218,54 +216,18 @@ async fn mint(dir: &Path, zec: &str, label: Option<String>) -> Result<()> {
 
 async fn scan(dir: &Path, from: Option<u64>, mempool: bool, check_transparent: bool) -> Result<()> {
     let mut state = store::load(dir)?;
-    let net = keys::parse_network(&state.merchant.network)?;
-    let ufvk = keys::decode_ufvk(&net, &state.merchant.ufvk)?;
-    let detector = Detector::new(keys::viewing_keys(&ufvk)?.ivk);
-
-    let mut client = lwd::connect(&state.merchant.server).await?;
-    let tip = lwd::tip(&mut client).await?;
     let start = from.unwrap_or_else(|| state.scan_start());
-    if start > tip {
-        bail!("start height {start} is above the chain tip {tip}");
-    }
-
-    let mut with_transparent = check_transparent;
-    let mut stream = match lwd::blocks(&mut client, start, tip, with_transparent).await {
-        Ok(s) => s,
-        Err(e) if with_transparent => {
-            eprintln!("warning: server refused transparent data ({e:#}); scanning shielded pools only");
-            with_transparent = false;
-            lwd::blocks(&mut client, start, tip, false).await?
-        }
-        Err(e) => return Err(e),
-    };
-
-    let mut blocks = 0u64;
-    let mut ironwood_actions = 0usize;
-    let mut found = Vec::new();
-    while let Some(block) = stream.message().await.context("block stream")? {
-        blocks += 1;
-        ironwood_actions += block.vtx.iter().map(|t| t.ironwood_actions.len()).sum::<usize>();
-        found.extend(detector.scan_block(&block));
-    }
-    let mined = state.apply(&found);
-
-    let mut seen = store::Applied::default();
-    if mempool {
-        let mut txs = lwd::mempool(&mut client, with_transparent).await?;
-        let mut pending = Vec::new();
-        while let Some(tx) = txs.message().await.context("mempool stream")? {
-            pending.extend(detector.scan_tx(&tx, None));
-        }
-        seen = state.apply(&pending);
-    }
-
-    state.last_scanned_height = Some(tip);
+    let mut client = lwd::connect(&state.merchant.server).await?;
+    let f = service::fetch(&mut client, service::incoming_key(&state)?, start, mempool, check_transparent).await?;
+    let (mined, seen) = service::commit(&mut state, &f);
     store::save(dir, &state)?;
+    let tip = f.tip;
 
     println!(
-        "Scanned blocks {start}..={tip} ({blocks} blocks, {ironwood_actions} Ironwood actions){}",
-        if with_transparent { ", transparent inputs checked" } else { "" }
+        "Scanned blocks {start}..={tip} ({} blocks, {} Ironwood actions){}",
+        f.blocks,
+        f.ironwood_actions,
+        if f.with_transparent { ", transparent inputs checked" } else { "" }
     );
     println!(
         "Detected {} mined and {} mempool notes for this key ({} unattributed).",
@@ -332,12 +294,18 @@ fn print_canary(state: &State, tip: u64) {
     }
 }
 
-fn random_id() -> Result<String> {
-    let mut b = [0u8; 8];
-    getrandom::fill(&mut b).map_err(|e| anyhow!("no OS randomness: {e}"))?;
-    Ok(hex::encode(b))
-}
+async fn serve(dir: &Path, listen: SocketAddr, interval: u64, reorg_depth: u64) -> Result<()> {
+    http::check_loopback(&listen)?;
+    if interval == 0 {
+        bail!("--interval must be at least 1 second");
+    }
+    let state = store::load(dir)?;
+    let server = state.merchant.server.clone();
+    let shared = Arc::new(tokio::sync::Mutex::new(state));
+    let app = http::App { state: shared.clone(), dir: dir.to_path_buf() };
 
-fn now_unix() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
+    let listener = tokio::net::TcpListener::bind(listen).await.with_context(|| format!("cannot listen on {listen}"))?;
+    println!("serving on http://{listen} (loopback only), scanning {server} every {interval} s");
+    tokio::spawn(service::follow(shared, dir.to_path_buf(), server, Duration::from_secs(interval), reorg_depth));
+    axum::serve(listener, http::router(app)).await.context("server stopped")
 }
