@@ -73,7 +73,7 @@ No party holds both ends: the issuer sees purchases and blinded messages, the or
 - [x] Payments funded from transparent inputs are flagged in the panel (scanner and issuer tests).
 - [x] Server-view panel: purchases and redemptions side by side, no join key, live anonymity-set size (`demo/test/demo.test.ts`, testnet demo run).
 
-**Residuals, stated in the README (corrected Oct 27):**
+**Residuals, stated in the README (corrected Oct 24):**
 
 - **IP and timing.** An order and a redemption from one IP, close in time, can be correlated; one confirmation (about 75 s) separates them. Fare does not route traffic and the SDK adds no delay: run the client through Tor or a proxy.
 - **One operator, both sides.** If one party runs the issuer and the origin, it can compare network metadata across them.
@@ -139,37 +139,22 @@ The run: `testnet-canary.yml` with `pay: true` and the payer's birthday. It rebu
 
 ## Day plan
 
-One gate, five build days, submission with a buffer: nothing after the canary starts until the canary passes.
+One gate, then the build, submission with a buffer: nothing after the canary started until the canary passed. The gate work began Oct 23; everything else was built on Oct 24, as the commit dates show.
 
 **Oct 23 (gate)**
 
 - [x] Scanner: mint, scan, status, viewing key; 11 tests green. Token canary: 100 tokens issued, verified, 11 of 11 refusal and unlinkability checks
-- [x] Oct 24: `fare-scanner check`, `fare-wallet` (headless testnet payer), canary and wallet workflows, CI
+
+**Oct 24**
+
+- [x] `fare-scanner check`, `fare-wallet` (headless testnet payer), canary and wallet workflows, CI
 - [x] Testnet canary passes (see Canary): [run 4](https://github.com/abdoulore/fare/actions/runs/40084407257)
-
-**Oct 24: issuance**
-
-- [x] `fare-scanner serve`: mint and status over localhost HTTP for the issuer
-- [x] Issuer: `POST /fare/purchases`, `GET /fare/purchases/{id}`, epoch RSA key, issuer directory at the well-known URL
-- [x] Client SDK: blind, order, poll, finalize, pin key
-
-**Oct 25: redemption**
-
-- [x] Origin middleware: 402 challenge, verify, spent-nonce store
-- [x] Demo API (LLM or search proxy) and an agent that calls it in a loop
-- [x] Server-view panel: purchases, redemptions, anonymity-set size
-
-**Oct 26: failure paths and testnet run (done)**
-
-- [x] Origin and SDK tests: reuse, forged, retired epoch, unpinned key
-- [x] Scanner follow mode with a cursor and a reorg rescan window
+- [x] Issuance: `fare-scanner serve`; issuer `POST /fare/purchases`, `GET /fare/purchases/{id}`, epoch RSA key, issuer directory; client SDK: blind, order, poll, finalize, pin key
+- [x] Redemption: origin middleware (402 challenge, verify, spent-nonce store); demo LLM proxy and an agent that calls it; server-view panel with the anonymity-set size
+- [x] Failure paths: origin and SDK tests (reuse, forged, retired epoch, unpinned key); scanner follow mode with a cursor and a reorg rescan window
 - [x] Testnet run: paid, underpaid and second-payment purchases with real txids, paid by `fare-wallet` ([run](https://github.com/abdoulore/fare/actions/runs/40098320054)); demo viewing key published in README
-
-**Oct 27: proof and polish**
-
-- [x] Threat model and README: what is real, what is mocked, residuals
-- [x] CI runs every test (scanner, wallet, token canaries)
-- [x] Headless agent wallet (`fare-wallet`), now required
+- [x] Threat model and README: what is real, what is mocked, residuals; CI runs every package
+- [x] Frontend (`web/`), demo payer, one-VPS deployment; live at https://fare.moonrider.online; paid hosted run; explorer screenshots
 
 **Oct 28: ship**
 

@@ -33,15 +33,15 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 
 | Part | State |
 | --- | --- |
-| `scanner/` (Rust) | Built. 33 tests green, clippy clean. Watch-only verifier (`init --uivk`) added Oct 26. `serve` proven on testnet Oct 24 ([run](https://github.com/abdoulore/fare/actions/runs/40091932215)): a purchase minted over HTTP went pending, in_mempool, paid after `fare-wallet` paid it in tx `9a6e1bf355929f15ccf13035d00c8e6dea01e56145d6ea4dbb068d71bdb24740` (height 4,535,836). |
+| `scanner/` (Rust) | Built. 36 tests green, clippy clean. Watch-only verifier (`init --uivk`) and the id-free ledger added Oct 24. `serve` proven on testnet Oct 24 ([run](https://github.com/abdoulore/fare/actions/runs/40091932215)): a purchase minted over HTTP went pending, in_mempool, paid after `fare-wallet` paid it in tx `9a6e1bf355929f15ccf13035d00c8e6dea01e56145d6ea4dbb068d71bdb24740` (height 4,535,836). |
 | `wallet/` (Rust) | Built Oct 24. 26 tests green, clippy clean. Paid both canary purchases on testnet. |
 | `token-canary/` (Node) | Passed 11 of 11 checks with 100 tokens. Native signing measured. |
-| `issuer/` (TypeScript) | Built Oct 24. 19 tests green, typecheck clean. Native signing, 7-day epoch keys. |
-| `sdk/` (TypeScript) | Built Oct 24. 12 tests green against the real issuer with a stub scanner. Follows key rotation through the directory (Oct 25). |
-| `origin/` (TypeScript) | Built Oct 25. 11 tests green, end to end with the real issuer and SDK. |
-| `demo/` (TypeScript) | Built Oct 25. LLM proxy behind the origin, agent paying with `fare-wallet`, loopback panel. 9 tests. Whole stack run on testnet ([run](https://github.com/abdoulore/fare/actions/runs/40096150452)): the agent hit a 402, paid 0.001 TAZ in tx `2e97c74b44bce98c4b6707928c78df62e6b630b042146b824dea833b964ae5b8`, got 100 tokens once it confirmed, made 5 calls (answers simulated: no model key secret), and a replayed token got `401 token_reused`. Panel: 1 paid purchase, 100 tokens issued, 6 redeemed, 1 refused, "one of 100 tokens from 1 purchase". |
-| Failure paths, testnet | Oct 26 ([run](https://github.com/abdoulore/fare/actions/runs/40098320054)): paid (+4, tx `b01a1fc0...a4df`, 100 tokens, a call served), underpaid (+5, tx `0c3e538b...058d`, no signatures), paid twice (+6, txs `60d3f691...ebf3` and `d3529ffb...a652`, 200000 zat recorded, still exactly 100 tokens). A watch-only verifier set up from the published incoming viewing key alone listed all four payments by index. Every SPEC failure-path row names its proving test. |
-| Demo viewing key | Published in README (owner approved Oct 26). |
+| `issuer/` (TypeScript) | Built Oct 24. 23 tests green, typecheck clean. Native signing, 7-day epoch keys, CORS, public ledger. |
+| `sdk/` (TypeScript) | Built Oct 24. 14 tests green against the real issuer with a stub scanner. Follows key rotation through the directory; browser-safe core. |
+| `origin/` (TypeScript) | Built Oct 24. 12 tests green, end to end with the real issuer and SDK. |
+| `demo/` (TypeScript) | Built Oct 24. LLM proxy behind the origin, agent paying with `fare-wallet`, loopback panel, demo payer. 18 tests. Whole stack run on testnet ([run](https://github.com/abdoulore/fare/actions/runs/40096150452)): the agent hit a 402, paid 0.001 TAZ in tx `2e97c74b44bce98c4b6707928c78df62e6b630b042146b824dea833b964ae5b8`, got 100 tokens once it confirmed, made 5 calls (answers simulated: no model key secret), and a replayed token got `401 token_reused`. Panel: 1 paid purchase, 100 tokens issued, 6 redeemed, 1 refused, "one of 100 tokens from 1 purchase". |
+| Failure paths, testnet | Oct 24 ([run](https://github.com/abdoulore/fare/actions/runs/40098320054)): paid (+4, tx `b01a1fc0...a4df`, 100 tokens, a call served), underpaid (+5, tx `0c3e538b...058d`, no signatures), paid twice (+6, txs `60d3f691...ebf3` and `d3529ffb...a652`, 200000 zat recorded, still exactly 100 tokens). A watch-only verifier set up from the published incoming viewing key alone listed all four payments by index. Every SPEC failure-path row names its proving test. |
+| Demo viewing key | Published in README (owner approved Oct 24). |
 | `web/` (TypeScript, React) | Built Oct 24. `/`, `/try`, `/server`, `/proof`, `/how`. Tokens blinded, unblinded and stored (IndexedDB) in the browser through `sdk/src/core.ts`. 9 Vitest tests; 22 Playwright tests on a local stack (stub scanner and wallet): the whole buyer flow, replay, underpaid, unlisted key, expired, model failure, no third-party requests, 375 px layout, keyboard, axe WCAG 2.1 AA in both colour schemes. |
 | Hosting | Live at https://fare.moonrider.online (Oct 24), DNS only, Caddy in front. Checked from outside: the four health routes, CORS for the site only, the 402 with the published key, no third-party requests. The hosted scanner, from the viewing key alone, listed the earlier payments +0 to +6, so new purchases start at +7. Paid hosted run Oct 24 (`web/e2e/hosted.spec.ts`, `docs/hosted/`): demo payer paid +7 in tx `5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0` (height 4,536,656), 100 tokens unblinded in the browser, 3 calls served (simulated answers), replay refused `401 token_reused`, no third-party requests. |
 
@@ -234,23 +234,19 @@ From the spec. Keep these shapes.
 - Redemption: `Authorization: PrivateToken token="<base64url>"`. Failures return `401` with one of `token_reused`, `bad_signature`, `unknown_key`, `wrong_challenge`, `expired_epoch`.
 - Scanner sidecar (`fare-scanner serve`): loopback only. `POST /mint {price_zat}` returns `201 {purchase_id, index, address, pay_uri}`; `GET /purchases/{id}` returns `{status, received_zat, payments, price_zat, leaky_funding, scanned_to, required_confirmations}`. `status` is one of `pending`, `in_mempool`, `confirming`, `paid`, `underpaid`. Ids are 128 bits, hex. Errors are `{error}` with 400 or 404.
 
-## Next tasks, after gate 1
+## Work log and what is left
 
-**Oct 24: issuance**
+The gate work began Oct 23 (token canary, first scanner); everything listed here was built and run on Oct 24, as the commit dates show.
 
-1. `fare-scanner serve` with a follow loop: scan from a saved cursor every 15 s and rescan the last 10 blocks for reorgs. Done when a purchase created over HTTP flips to `paid` after a real payment, with handler tests.
-2. `issuer/`: purchases API, epoch key, issuer directory, signing as approved. Done when signatures are returned only after `paid`, a wrong N is refused, and unit tests cover both.
-3. `sdk/`: pin key, blind, order, poll, finalize, store tokens. Done when the full flow runs against a local issuer with a stubbed scanner status, plus an unpinned-key abort test.
+**Done Oct 24**
 
-**Oct 25: redemption.** Origin middleware with the checks in invariant 9, the demo API and agent loop, the server-view panel with anonymity-set size.
+1. Issuance: `fare-scanner serve` with a follow loop (cursor, 15 s interval, 10-block reorg rescan), the issuer (purchases API, epoch key, directory, native signing), the SDK (pin, blind, order, poll, finalize, store, unpinned-key abort). A purchase created over HTTP flipped to `paid` after a real payment.
+2. Redemption: origin middleware with the invariant 9 checks, the demo API and agent, the loopback panel with the anonymity-set size.
+3. Failure paths: every row of "Failure paths" in `docs/SPEC.md` is a test or a testnet run; paid, underpaid and second-payment purchases paid by `fare-wallet`; the demo viewing key published.
+4. Proof: README with what is real, the threat model and residuals; CI for every package.
+5. Frontend and hosting: `web/` with the buyer flow and the public pages, CORS and id-free public views, the demo payer, `deploy/`. Live at https://fare.moonrider.online; the paid hosted run done; explorer screenshots of every proof txid in `docs/explorer/` (ZecBlock, which CipherScan's testnet explorer forwards to; zcashexplorer.app's testnet site lists none of the Ironwood txs).
 
-**Oct 26: failure paths and the testnet run.** Every row of "Failure paths" in `docs/SPEC.md` becomes a test or a scripted demo step. Testnet run with paid, underpaid and second-payment purchases, paid by `fare-wallet`. Publish the demo viewing key (`fare-scanner viewing-key`).
-
-**Oct 27: proof and polish.** README with a real-versus-mocked table, threat model and residuals (done Oct 27). CI runs every package: scanner, wallet, issuer, sdk, origin, demo, token canaries.
-
-**Oct 24 (added): frontend.** `web/` with the buyer flow and the public pages, CORS and public id-free views on the services, the demo payer, `deploy/` for one VPS. Deployed at https://fare.moonrider.online, the paid hosted run done, and explorer screenshots of every proof txid in `docs/explorer/` (ZecBlock, which CipherScan's testnet explorer forwards to; zcashexplorer.app's testnet site lists none of the Ironwood txs) (Oct 24).
-
-**Oct 28: ship.** Demo video, submission text, repo public.
+**Left, by Oct 28:** demo video, submission text, repo public. Drafts in `docs/submission.md` and `docs/video-script.md`.
 
 ## Definition of done for the submission
 
