@@ -1,0 +1,48 @@
+name: Testnet hosted run
+
+# One real run against the deployed site: the demo payer pays 0.001 TAZ for a pack, the
+# browser unblinds 100 tokens, makes 3 calls and replays one. Spends testnet TAZ from the
+# demo payer, so the owner dispatches it. Screenshots and run.json are uploaded.
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Site URL
+        required: true
+        default: https://fare.moonrider.online
+
+permissions:
+  contents: read
+
+jobs:
+  hosted:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Hosted run
+        env:
+          HOSTED_URL: ${{ inputs.url }}
+        run: npx playwright test -c playwright.hosted.config.ts
+      - name: Summary
+        if: always()
+        run: |
+          test -f hosted-results/run.json || exit 0
+          jq '{payment, origin_stats, answers}' hosted-results/run.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hosted-run
+          path: web/hosted-results
+          retention-days: 30
