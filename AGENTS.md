@@ -29,7 +29,7 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 - **Research before asking** when a fact can be verified (crate source, RFCs, official docs).
 - **Writing:** direct, short, factual, no speculative claims. Label anything simulated as simulated, in the UI and in the README.
 
-## Status (Oct 26)
+## Status (Oct 27)
 
 | Part | State |
 | --- | --- |
@@ -95,6 +95,7 @@ fare/
     tests/attribution.rs   real note encryption through the scanner
     tests/check.rs         the canary verdict
     tests/serve.rs         serve handlers, reorg rescan, loopback rule
+    tests/watch_only.rs    verifying with the published incoming viewing key
     tests/invariants.rs    source checks that fail the build on leaks
   wallet/              Rust: fare-wallet, headless testnet payer
     src/request.rs     which zcash: URIs it pays (one shielded recipient, no memo, under --max-zec)
@@ -131,6 +132,7 @@ cargo clippy --all-targets       # must stay clean
 ./target/release/fare-scanner status
 ./target/release/fare-scanner check --paid LABEL [--paid ...] --underpaid LABEL [...]
 ./target/release/fare-scanner viewing-key
+./target/release/fare-scanner --dir verify init --network test --uivk KEY --birthday H   # watch-only verifier
 ./target/release/fare-scanner serve [--listen 127.0.0.1:7077] [--interval 15] [--reorg-depth 10]
 
 cd wallet                        # FARE_PAYER_SEED in the environment, testnet phrase only
@@ -228,7 +230,7 @@ From the spec. Keep these shapes.
 
 **Oct 26: failure paths and the testnet run.** Every row of "Failure paths" in `docs/SPEC.md` becomes a test or a scripted demo step. Testnet run with paid, underpaid and second-payment purchases, paid by `fare-wallet`. Publish the demo viewing key (`fare-scanner viewing-key`).
 
-**Oct 27: proof and polish.** README with a real-versus-mocked table and the residuals. CI is in place (scanner, wallet, token canaries).
+**Oct 27: proof and polish.** README with a real-versus-mocked table, threat model and residuals (done Oct 27). CI runs every package: scanner, wallet, issuer, sdk, origin, demo, token canaries.
 
 **Oct 28: ship.** Demo video, submission text, repo public.
 

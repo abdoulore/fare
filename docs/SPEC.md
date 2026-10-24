@@ -63,22 +63,26 @@ No party holds both ends: the issuer sees purchases and blinded messages, the or
 | Origin | Each token, its arrival time, request content, client IP | The purchase behind a token; whether two calls share a buyer |
 | Judges, with the demo viewing key | Every purchase: amount, index, height | Tokens, calls, payers |
 
-**Leak checklist (each one demoed or tested):**
+**Leak checklist (each one tested; the failure-path table names the tests):**
 
-- [ ] Shielded-only address: Orchard-type receiver only, no transparent or Sapling receiver.
-- [ ] Fresh diversifier index per purchase, counted up from 2^40 and never reused.
-- [ ] No memo in `pay_uri`; the scanner never calls `GetTransaction`. A test fails the build if that call appears.
-- [ ] Fixed pack sizes; the issuer rejects any other N.
-- [ ] One issuer key per epoch at the well-known URL; the client pins it and refuses any other.
-- [ ] Payments funded from transparent inputs are flagged in the panel.
-- [ ] Server-view panel: purchases and redemptions side by side, no join key, live anonymity-set size.
+- [x] Shielded-only address: Orchard-type receiver only, no transparent or Sapling receiver (`minted_address_is_shielded_only_and_maps_back_to_its_index`).
+- [x] Fresh diversifier index per purchase, counted up from 2^40 and never reused (testnet merchant state is cached between runs so indices +0 to +6 were each used once).
+- [x] No memo in `pay_uri`; the scanner never calls `GetTransaction`. Source checks fail the build if either appears (`scanner/tests/invariants.rs`).
+- [x] Fixed pack sizes; the issuer rejects any other N (`refuses any pack size but the fixed one`).
+- [x] One issuer key per epoch at the well-known URL; the client refuses any key the directory does not list (SDK tests).
+- [x] Payments funded from transparent inputs are flagged in the panel (scanner and issuer tests).
+- [x] Server-view panel: purchases and redemptions side by side, no join key, live anonymity-set size (`demo/test/demo.test.ts`, testnet demo run).
 
-**Residuals, stated in the README:**
+**Residuals, stated in the README (corrected Oct 27):**
 
-- **IP and timing.** An order and a redemption from one IP seconds apart can be correlated. The SDK waits a random delay before first use and can redeem through a separate proxy or Tor; Fare does not solve network privacy.
+- **IP and timing.** An order and a redemption from one IP, close in time, can be correlated; one confirmation (about 75 s) separates them. Fare does not route traffic and the SDK adds no delay: run the client through Tor or a proxy.
+- **One operator, both sides.** If one party runs the issuer and the origin, it can compare network metadata across them.
 - **Small anonymity set.** A token hides only among tokens from the same epoch key. Early on that set is small; the panel shows its size.
+- **Key consistency.** The client pins on first fetch and follows rotations through the directory; nothing external checks that every client sees the same directory.
 - **Request content.** The origin still reads what you ask. Fare unlinks identity, not content.
 - **Transparent funding.** A payer who funds from transparent balance exposes their own address. Fare flags it but cannot prevent it.
+- **Expiring and lost tokens.** Unspent tokens die when their key retires. A token spent on a call whose model request fails is not refunded.
+- **Reorgs.** Tokens issued at one confirmation stand if the payment is later reorged out.
 
 ## Failure paths
 
@@ -163,7 +167,7 @@ One gate, five build days, submission with a buffer: nothing after the canary st
 
 **Oct 27: proof and polish**
 
-- [ ] Threat model and README: what is real, what is mocked, residuals
+- [x] Threat model and README: what is real, what is mocked, residuals
 - [x] CI runs every test (scanner, wallet, token canaries)
 - [x] Headless agent wallet (`fare-wallet`), now required
 

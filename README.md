@@ -50,6 +50,83 @@ cd scanner && cargo build --release
 
 The scan needs a machine that can reach `testnet.zec.rocks`. Block explorer screenshots of these transactions are still to be added.
 
+## What is real
+
+| Part | State |
+| --- | --- |
+| Payments | Real testnet TAZ, paid from shielded notes by `fare-wallet`. Mainnet was not run (testnet by owner decision, Oct 24) |
+| Payment detection | Real: trial decryption of real compact blocks from `testnet.zec.rocks`, by diversifier index, no memo, no transaction lookup |
+| Tokens | Real RFC 9578 type 2 (Blind RSA 2048, PSS) via `@cloudflare/privacypass-ts`; issuer signatures by native OpenSSL, each verified before release |
+| Redemption | Real: key id, challenge digest, signature and spent set checked on every call |
+| Demo API answers | **Simulated** in every testnet run so far: the repo has no model API key, so a canned responder answers and says so. With `ANTHROPIC_API_KEY` set, answers come from Claude |
+| Panel | Real counts from the issuer's purchase store and the origin's spent set |
+| Hosting | Nothing is hosted. Each testnet run starts the scanner, issuer and demo API on a GitHub runner and stops them after. There is no public demo URL |
+| Explorer screenshots | Not yet added |
+
+## Threat model
+
+No party holds both ends. The issuer sees purchases and blinded messages; the origin sees tokens; nothing joins the two.
+
+| Who | Sees | Cannot see |
+| --- | --- | --- |
+| Chain observer | A shielded transaction and its fee | Payer, amount, purchase address, which service |
+| lightwalletd operator (merchant side) | The scanner's IP, block ranges, mempool snapshots | Which transactions are the merchant's |
+| lightwalletd operator (payer side) | The payer's IP, its sync and the transaction it broadcasts | The amount, the recipient, which purchase it pays |
+| Issuer | Purchase id, price, payment status, 100 blinded messages, the client's IP at order time | The tokens those messages become |
+| Origin | Each token, its arrival time, the request, the client's IP | The purchase behind a token; whether two calls share a buyer |
+| Model provider (demo, when enabled) | The prompt | Who asked: no user id, address or token is sent |
+| Anyone with the published demo key | Every payment to the demo merchant: amount, index, height | Tokens, calls, payers |
+
+What enforces it, each with a test (`docs/SPEC.md` lists them):
+
+- Purchase addresses carry an Orchard-type receiver only, at a fresh index per purchase, never reused.
+- No memo; the scanner never asks a server for one transaction or address. Source checks fail the build otherwise.
+- One pack size; the issuer refuses any other N.
+- One issuer key per 7-day epoch, published in the directory. The client refuses any key the directory does not list.
+- The issuer never handles tokens and the origin never handles purchases. Neither logs client addresses, user agents or request times. Source checks fail the build otherwise.
+- Tokens issue only after one confirmation, never from the mempool.
+- Payments funded from transparent inputs are flagged.
+
+## Residuals
+
+What Fare does not protect, stated plainly:
+
+- **Network metadata.** An order and the first call from one IP, close in time, can be correlated. One confirmation (about 75 s) separates them, which is not much. Fare does not route traffic: run the client through Tor or a proxy if this matters. The same applies to the payer's connection to lightwalletd.
+- **One operator, both sides.** The cryptography unlinks tokens from purchases. If one party runs the issuer and the origin, network metadata on both sides is theirs to compare.
+- **Small anonymity set.** A token hides among the tokens issued under the same key. In the failure-paths run that was 200 tokens from 2 purchases, all one buyer. The panel shows the size.
+- **Key consistency.** The client pins the key from its first directory fetch and follows rotations only through the directory. Nothing outside checks that every client sees the same directory.
+- **Request content.** The origin reads what you ask, and in the demo so does the model provider. Fare unlinks identity, not content.
+- **Transparent funding.** A payer who funds from a transparent balance exposes their own address. Fare flags it and cannot prevent it.
+- **Expiring tokens.** Unspent tokens stop working when their key retires, 24 h after the key's 7-day epoch ends. A pack bought early in an epoch lasts about 8 days; one bought at its end, about 24 hours.
+- **Lost tokens.** A token is spent before the request runs. If the model fails after that, the token is gone: refunding it would link it to the caller.
+- **Reorgs.** Tokens issue at one confirmation. A payment whose block is later reorged out keeps its tokens; the merchant carries that loss.
+
+## Run it
+
+Chain access needs a machine that can reach `testnet.zec.rocks`. On GitHub, the workflows do everything:
+
+| Workflow | Does |
+| --- | --- |
+| `testnet-wallet.yml` | Payer balance, funding address, or one payment |
+| `testnet-canary.yml` | Gate 1: paid and underpaid purchases, `fare-scanner check` |
+| `testnet-serve.yml` | A purchase minted over HTTP flips to paid |
+| `testnet-demo.yml` | The whole stack: agent pays, calls, replay refused, panel |
+| `testnet-failure-paths.yml` | Paid, underpaid and paid twice, then the watch-only verifier |
+
+They need the repository secrets `FARE_TESTNET_UFVK` (merchant viewing key) and `FARE_PAYER_SEED` (a testnet-only phrase), and optionally `ANTHROPIC_API_KEY`.
+
+Locally, each in its own terminal:
+
+```
+cd scanner && cargo build --release && ./target/release/fare-scanner init --network test && ./target/release/fare-scanner serve
+cd issuer && npm ci && npm start
+cd demo && npm ci && npm run api                      # API on 127.0.0.1:8080, panel on 127.0.0.1:8790/panel
+cd wallet && cargo build --release                    # then: export FARE_PAYER_SEED=..., fare-wallet init --birthday <height>
+cd demo && CALLS=5 npm run agent
+```
+
+Tests: `cargo test` in `scanner/` and `wallet/`, `npm test` in `issuer/`, `sdk/`, `origin/` and `demo/` (each package's README has the install line).
+
 ## Status (Oct 26)
 
 | Part | State |

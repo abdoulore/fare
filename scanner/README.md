@@ -25,6 +25,16 @@ fare viewing-key                  # incoming-only key to publish for the demo ac
 
 `--server <url>` on `init` picks the lightwalletd. Default: `testnet.zec.rocks` on testnet, CipherScan on mainnet. CipherScan's testnet server currently presents a certificate for another host name.
 
+## Verify with a published key (watch-only)
+
+```
+fare --dir verify init --network test --uivk <unified incoming viewing key> --birthday <height>
+fare --dir verify scan --from <height> --check-transparent
+fare --dir verify status
+```
+
+`--uivk` takes the incoming viewing key a merchant publishes (`fare viewing-key`). It yields the same purchase addresses and detects the same payments as the full key, but holds no seed and refuses to mint: a verifier must not hand out the merchant's indices. `status` lists each payment by purchase index (`+N`) with amount, height and txid. A full viewing key passed as `--uivk` is refused.
+
 ## serve (the issuer's sidecar)
 
 ```
@@ -66,7 +76,7 @@ If the scan reports zero Ironwood actions over hundreds of blocks, the server is
 
 Real: key derivation, address minting, note encryption and decryption, compact block parsing, attribution, status logic. `tests/attribution.rs` builds genuinely encrypted Ironwood and Orchard notes and wraps them in the same protobuf lightwalletd returns.
 
-Not yet proven: the live network path. That is the canary.
+The live network path is proven on testnet: the [canary](https://github.com/abdoulore/fare/actions/runs/40084407257) (gate 1), `serve`, and the [failure-paths run](https://github.com/abdoulore/fare/actions/runs/40098320054).
 
 ## Tests
 
@@ -74,4 +84,4 @@ Not yet proven: the live network path. That is the canary.
 cargo test
 ```
 
-29 tests: serve handlers and reorg rescans (9), the canary verdict across 8 cases (pass, pending, mempool only, underpaid listed as paid, paid listed as underpaid, unknown label, repeated label, no scan yet), exact ZEC parsing, attribution across 8 cases (exact, underpaid, Orchard list, foreign key, wrong-pool note, wallet's own address, transparent-funded, note hidden between decoys), mempool then confirmation then overpayment, address round trip, key encoding, seed generation, four source invariants.
+33 tests: watch-only verification (4), serve handlers and reorg rescans (9), the canary verdict across 8 cases (pass, pending, mempool only, underpaid listed as paid, paid listed as underpaid, unknown label, repeated label, no scan yet), exact ZEC parsing, attribution across 8 cases (exact, underpaid, Orchard list, foreign key, wrong-pool note, wallet's own address, transparent-funded, note hidden between decoys), mempool then confirmation then overpayment, address round trip, key encoding, seed generation, four source invariants.
