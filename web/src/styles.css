@@ -122,7 +122,7 @@ ol.steps > li::after { content: ''; position: absolute; left: 14px; top: 30px; b
 ol.steps > li:last-child::after { display: none; }
 ol.steps > li.done::before { border-color: var(--text); color: var(--text); }
 ol.steps > li.active::before { border-color: var(--accent); color: var(--accent); }
-ol.steps > li.locked { opacity: 0.5; }
+ol.steps > li.locked h2 { color: var(--muted); }
 ol.steps > li h2 { line-height: 28px; margin-bottom: 10px; }
 
 .badge { font: 500 0.78rem var(--mono); padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
@@ -196,3 +196,6 @@ pre { background: var(--surface); border: 1px solid var(--line); border-radius: 
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 .contents { display: contents; }
+main section.stack, .ledger + section { margin-top: 36px; }
+.panel h3 { margin-top: 16px; }
+.panel h2 + p.muted { margin-bottom: 4px; }

@@ -52,7 +52,13 @@ export function Landing() {
         </div>
         <div className="panel">
           <h2>Current anonymity set</h2>
-          {key ? <Dots issued={Math.min(key.issued, 300)} spent={Math.min(spent, 300)} /> : <p className="muted">Loading.</p>}
+          {!key ? (
+            <p className="muted">Loading.</p>
+          ) : key.issued === 0 ? (
+            <p className="muted">No tokens issued under the current key yet. The first pack you buy makes a set of 100.</p>
+          ) : (
+            <Dots issued={Math.min(key.issued, 300)} spent={Math.min(spent, 300)} />
+          )}
           {key && (
             <p className="muted mono">
               {key.issued} tokens, {spent} spent
