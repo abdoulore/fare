@@ -14,7 +14,7 @@ import { publicVerif } from '@cloudflare/privacypass-ts';
 import { PACK, PRICE_ZAT, PURCHASE_TTL_SECONDS, TOKEN_REQUEST_BYTES } from './config.ts';
 import { KeyRing } from './keys.ts';
 import { ScannerClient, ScannerUnavailable } from './scanner.ts';
-import { blindSign } from './sign.ts';
+import { blindSign, SignError } from './sign.ts';
 import { PurchaseStore } from './store.ts';
 
 const { BLIND_RSA, TokenRequest, TokenResponse } = publicVerif;
@@ -142,10 +142,17 @@ export function createIssuer(opts: IssuerOptions) {
         send(res, 410, { status: 'key_retired' });
         return;
       }
-      const signatures = record.requests.map((r) => {
-        const request = TokenRequest.deserialize(BLIND_RSA, new Uint8Array(Buffer.from(r, 'base64url')));
-        return b64url(new TokenResponse(blindSign(key, request.blindedMsg)).serialize());
-      });
+      let signatures: string[];
+      try {
+        signatures = record.requests.map((r) => {
+          const request = TokenRequest.deserialize(BLIND_RSA, new Uint8Array(Buffer.from(r, 'base64url')));
+          return b64url(new TokenResponse(blindSign(key, request.blindedMsg)).serialize());
+        });
+      } catch (e) {
+        // Never pass an OpenSSL message to the client.
+        if (e instanceof SignError) throw new HttpError(500, 'signing_failed');
+        throw e;
+      }
       const body: Record<string, unknown> = { status: 'paid', signatures };
       // Invariant 11: flagged, never silently accepted.
       if (status.leaky_funding) body.warning = 'funded_from_transparent_inputs';

@@ -99,6 +99,27 @@ test('a transparent-funded payment is signed but flagged', async () => {
   assert.equal(body.signatures.length, PACK);
 });
 
+test('a signing failure is a clean 500, never an OpenSSL message', async () => {
+  const bought = await buy();
+  scanner.statuses.set(bought.purchase_id, { status: 'paid' });
+  const keys = issuer.issuer.keys;
+  const real = keys.signable.bind(keys);
+  const { generateKeyPairSync } = await import('node:crypto');
+  const stranger = generateKeyPairSync('rsa', { modulusLength: 2048 });
+  // The right private key with a stranger's public key: verification must fail.
+  keys.signable = (epoch, t) => {
+    const k = real(epoch, t);
+    return k && { ...k, pub: stranger.publicKey };
+  };
+  try {
+    const res = await status(bought.purchase_id);
+    assert.equal(res.status, 500);
+    assert.deepEqual(await json(res), { error: 'signing_failed' });
+  } finally {
+    keys.signable = real;
+  }
+});
+
 test('refuses any pack size but the fixed one', async () => {
   const before = scanner.mints;
   for (const [packN, blinded, reason] of [

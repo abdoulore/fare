@@ -29,7 +29,7 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 - **Research before asking** when a fact can be verified (crate source, RFCs, official docs).
 - **Writing:** direct, short, factual, no speculative claims. Label anything simulated as simulated, in the UI and in the README.
 
-## Status (Oct 27)
+## Status (Oct 24)
 
 | Part | State |
 | --- | --- |

@@ -127,7 +127,7 @@ cd demo && CALLS=5 npm run agent
 
 Tests: `cargo test` in `scanner/` and `wallet/`, `npm test` in `issuer/`, `sdk/`, `origin/` and `demo/` (each package's README has the install line).
 
-## Status (Oct 26)
+## Status (Oct 24)
 
 | Part | State |
 | --- | --- |

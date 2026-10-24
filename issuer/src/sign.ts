@@ -25,7 +25,13 @@ export function blindSign(key: SigningKey, blindedMsg: Uint8Array): Uint8Array {
     // OpenSSL refuses a message that is not below the modulus.
     throw new SignError('blinded message is not a valid input for this key');
   }
-  const m = publicEncrypt({ key: key.pub, padding: constants.RSA_NO_PADDING }, s);
+  let m: Buffer;
+  try {
+    m = publicEncrypt({ key: key.pub, padding: constants.RSA_NO_PADDING }, s);
+  } catch {
+    // A signature not below the verifying key's modulus is as wrong as a mismatch.
+    throw new SignError('signature failed verification, not released');
+  }
   if (!m.equals(blindedMsg)) {
     throw new SignError('signature failed verification, not released');
   }
