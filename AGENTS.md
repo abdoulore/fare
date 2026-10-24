@@ -42,6 +42,8 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 | `demo/` (TypeScript) | Built Oct 25. LLM proxy behind the origin, agent paying with `fare-wallet`, loopback panel. 9 tests. Whole stack run on testnet ([run](https://github.com/abdoulore/fare/actions/runs/40096150452)): the agent hit a 402, paid 0.001 TAZ in tx `2e97c74b44bce98c4b6707928c78df62e6b630b042146b824dea833b964ae5b8`, got 100 tokens once it confirmed, made 5 calls (answers simulated: no model key secret), and a replayed token got `401 token_reused`. Panel: 1 paid purchase, 100 tokens issued, 6 redeemed, 1 refused, "one of 100 tokens from 1 purchase". |
 | Failure paths, testnet | Oct 26 ([run](https://github.com/abdoulore/fare/actions/runs/40098320054)): paid (+4, tx `b01a1fc0...a4df`, 100 tokens, a call served), underpaid (+5, tx `0c3e538b...058d`, no signatures), paid twice (+6, txs `60d3f691...ebf3` and `d3529ffb...a652`, 200000 zat recorded, still exactly 100 tokens). A watch-only verifier set up from the published incoming viewing key alone listed all four payments by index. Every SPEC failure-path row names its proving test. |
 | Demo viewing key | Published in README (owner approved Oct 26). |
+| `web/` (TypeScript, React) | Built Oct 24. `/`, `/try`, `/server`, `/proof`, `/how`. Tokens blinded, unblinded and stored (IndexedDB) in the browser through `sdk/src/core.ts`. 9 Vitest tests; 22 Playwright tests on a local stack (stub scanner and wallet): the whole buyer flow, replay, underpaid, unlisted key, expired, model failure, no third-party requests, 375 px layout, keyboard, axe WCAG 2.1 AA in both colour schemes. |
+| Hosting | `deploy/` ready (Caddy, systemd, `setup.sh`). Not yet deployed: needs a VPS and a domain from the owner. |
 
 ## Gates
 
@@ -69,6 +71,11 @@ Do not change these without the owner.
 | Pack and price | One pack: 100 calls for 0.001 TAZ. The issuer refuses any other N (owner, Oct 24) |
 | Demo API | LLM proxy. With no model API key on the demo host, a canned responder labeled "simulated" in the UI and README (owner, Oct 24) |
 | Issuer key epoch | Rotates every 7 days; the previous key stays valid for a 24 h grace window (owner, Oct 24) |
+| Frontend look (D1) | "Quiet ledger": warm near-black, one amber accent, self-hosted IBM Plex Sans and Mono, the empty "no link" column, the anonymity-set dot grid (owner, Oct 24) |
+| Hosting (D2) | One VPS behind Caddy: static `web/` build plus `api.`, `issuer.` and `payer.` subdomains; scanner and panel on loopback only (owner, Oct 24) |
+| Hosted payer (D3) | Both: the demo payer first (server-side `fare-wallet`, labeled as Fare's, 5 packs an hour, max 0.001 TAZ), and a QR for the visitor's own Ironwood wallet (owner, Oct 24) |
+| Public server view (D4) | Purchase index, amount, height, status, redemption counts per key, anonymity-set size. Never purchase ids: they fetch signatures (owner, Oct 24) |
+| Hosted answers (D5) | Real Claude answers if the host has `ANTHROPIC_API_KEY`, otherwise simulated and labeled on every answer (owner, Oct 24) |
 
 ## Open decisions
 
@@ -109,9 +116,12 @@ fare/
     src/sign.ts        native blind RSA with verify-before-release
     src/store.ts       purchases: id, epoch, blinded requests, pay URI, expiry
     src/scanner.ts     client for fare-scanner serve
-  sdk/                 TypeScript client: pin, 402 handling, order, collect, spend
+  sdk/                 TypeScript client: src/core.ts runs in browsers too; src/index.ts adds the Node file store
   origin/              TypeScript middleware: 402 challenge, invariant 9 checks, spent-nonce store
-  demo/                TypeScript: LLM proxy (src/server.ts, src/llm.ts), agent (src/agent.ts), panel (src/panel.ts)
+  demo/                TypeScript: LLM proxy (src/server.ts, src/llm.ts), agent (src/agent.ts), panel (src/panel.ts),
+                       demo payer (src/payer.ts, src/payer-main.ts)
+  web/                 Vite + React frontend; e2e/stack.ts is the local stack Playwright runs against
+  deploy/              one-VPS deployment: Caddyfile, systemd units, setup.sh, env templates
   token-canary/        Node: Privacy Pass proof (canary.mjs, native-sign.mjs)
   .github/workflows/   ci.yml, testnet-canary.yml, testnet-wallet.yml, testnet-serve.yml, testnet-demo.yml, testnet-failure-paths.yml
 ```
@@ -148,6 +158,12 @@ cd sdk && npm ci --prefix ../issuer && npm ci && npm test
 cd origin && npm ci --prefix ../issuer && npm ci --prefix ../sdk && npm ci && npm test
 cd demo && npm ci && npm run api          # API 127.0.0.1:8080, panel 127.0.0.1:8790/panel
 cd demo && CALLS=5 npm run agent          # pays with fare-wallet, then replays a token
+
+cd demo && npm run payer                  # demo payer on 127.0.0.1:8791 (FARE_PAYER_SEED, testnet)
+
+cd web && npm ci && npm test              # Vitest
+cd web && npx playwright test             # builds, starts e2e/stack.ts, runs the browser tests
+cd web && npm run dev                     # against a local issuer, API and payer
 
 cd token-canary
 npm install
@@ -231,6 +247,8 @@ From the spec. Keep these shapes.
 **Oct 26: failure paths and the testnet run.** Every row of "Failure paths" in `docs/SPEC.md` becomes a test or a scripted demo step. Testnet run with paid, underpaid and second-payment purchases, paid by `fare-wallet`. Publish the demo viewing key (`fare-scanner viewing-key`).
 
 **Oct 27: proof and polish.** README with a real-versus-mocked table, threat model and residuals (done Oct 27). CI runs every package: scanner, wallet, issuer, sdk, origin, demo, token canaries.
+
+**Oct 24 (added): frontend.** `web/` with the buyer flow and the public pages, CORS and public id-free views on the services, the demo payer, `deploy/` for one VPS. Remaining: deploy (owner's VPS and domain), one real hosted run on testnet with the demo payer, screenshots in the README.
 
 **Oct 28: ship.** Demo video, submission text, repo public.
 

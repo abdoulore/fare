@@ -4,6 +4,8 @@ Pay once in shielded ZEC. Then every API call carries a token nobody can link ba
 
 Built for ZECATHON 2026, Shielded Payments track. Runs on Zcash testnet.
 
+**Try it:** the hosted demo is not deployed yet. `deploy/` holds everything for one VPS; this line will carry the URL once it is up. Until then, `web/` runs locally (see [Run it](#run-it)).
+
 ![Fare architecture](docs/architecture.png)
 
 ## How it works
@@ -60,7 +62,9 @@ The scan needs a machine that can reach `testnet.zec.rocks`. Block explorer scre
 | Redemption | Real: key id, challenge digest, signature and spent set checked on every call |
 | Demo API answers | **Simulated** in every testnet run so far: the repo has no model API key, so a canned responder answers and says so. With `ANTHROPIC_API_KEY` set, answers come from Claude |
 | Panel | Real counts from the issuer's purchase store and the origin's spent set |
-| Hosting | Nothing is hosted. Each testnet run starts the scanner, issuer and demo API on a GitHub runner and stops them after. There is no public demo URL |
+| Frontend (`web/`) | Real: tokens are blinded, unblinded and stored in the visitor's browser. Its end-to-end tests run against a stub scanner and a stub wallet, labeled as such in `web/e2e/stack.ts` |
+| Demo payer | When used, a real testnet payment from Fare's own `fare-wallet`, not the visitor's. The page says so on every payment |
+| Hosting | Not yet. `deploy/` sets up one VPS behind Caddy (owner decision D2). Until it is up, each testnet run starts the stack on a GitHub runner and stops it after |
 | Explorer screenshots | Not yet added |
 
 ## Threat model
@@ -125,18 +129,27 @@ cd wallet && cargo build --release                    # then: export FARE_PAYER_
 cd demo && CALLS=5 npm run agent
 ```
 
-Tests: `cargo test` in `scanner/` and `wallet/`, `npm test` in `issuer/`, `sdk/`, `origin/` and `demo/` (each package's README has the install line).
+The frontend, against those services (start the issuer, the demo API and `npm run payer` in `demo/` with `WEB_ORIGINS=http://127.0.0.1:5173`):
+
+```
+cd web && npm ci && npm run dev                       # http://127.0.0.1:5173
+```
+
+Tests: `cargo test` in `scanner/` and `wallet/`, `npm test` in `issuer/`, `sdk/`, `origin/`, `demo/` and `web/`, and `npx playwright test` in `web/` (each package's README has the install line).
+
+To host it: [`deploy/README.md`](deploy/README.md).
 
 ## Status (Oct 24)
 
 | Part | State |
 | --- | --- |
-| `scanner/` (Rust) | Payment detection, `serve` sidecar, watch-only verifier. 33 tests, clippy clean |
+| `scanner/` (Rust) | Payment detection, `serve` sidecar with an id-free ledger, watch-only verifier. 36 tests, clippy clean |
 | `wallet/` (Rust) | `fare-wallet`, headless testnet payer. 26 tests, clippy clean |
-| `issuer/` (TypeScript) | Purchases API, 7-day epoch keys, native blind signing. 19 tests |
-| `sdk/` (TypeScript) | Pin, 402 handling, order, collect, spend, follows key rotation. 12 tests |
-| `origin/` (TypeScript) | 402 challenge, invariant 9 redemption checks, spent-nonce store. 11 tests |
-| `demo/` (TypeScript) | LLM proxy behind the origin, paying agent, loopback panel. 9 tests |
+| `issuer/` (TypeScript) | Purchases API, 7-day epoch keys, native blind signing, CORS, public ledger. 23 tests |
+| `sdk/` (TypeScript) | Pin, 402 handling, order, collect, spend, follows key rotation; browser-safe core. 14 tests |
+| `origin/` (TypeScript) | 402 challenge, invariant 9 redemption checks, spent-nonce store. 12 tests |
+| `demo/` (TypeScript) | LLM proxy behind the origin, paying agent, loopback panel, demo payer. 18 tests |
+| `web/` (TypeScript, React) | The frontend. 9 unit tests, 22 browser tests (flow, refusals, layout, keyboard, accessibility) |
 | `token-canary/` (Node) | Privacy Pass proof: 100 tokens, 11 of 11 checks |
 
 CI runs every test on every push. The testnet workflows (`.github/workflows/testnet-*.yml`) run the chain-facing parts on GitHub runners.
@@ -152,7 +165,9 @@ Demo answers are **simulated** unless the demo host has a model API key: the API
 | `scanner/README.md` | The scanner, `serve`, and the canary |
 | `wallet/README.md` | The headless payer: commands, seed rules, refusals |
 | `issuer/README.md`, `sdk/README.md`, `origin/README.md` | The token side |
-| `demo/README.md` | Running the whole thing |
+| `demo/README.md` | Running the whole thing, and the demo payer |
+| `web/README.md` | The frontend |
+| `deploy/README.md` | Hosting on one VPS |
 
 ## Never commit
 
