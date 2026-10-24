@@ -218,6 +218,13 @@ impl State {
                     out.attributed += 1;
                 }
                 None => {
+                    // A payment at an index this state has not handed out yet means another
+                    // state (an earlier run, a lost volume) used it. Never mint it again.
+                    if let Ok(j) = u64::try_from(d.diversifier_index) {
+                        if j >= PURCHASE_INDEX_BASE && j >= self.merchant.next_index {
+                            self.merchant.next_index = j + 1;
+                        }
+                    }
                     let key = d.diversifier_index.to_string();
                     match self.unattributed.iter_mut().find(|u| same_output(&u.payment, &payment)) {
                         Some(existing) => merge(&mut existing.payment, payment),

@@ -35,6 +35,8 @@ fn fixture() -> Fixture {
         next_index: PURCHASE_INDEX_BASE,
         required_confirmations: 1,
     });
+    let mut state = state;
+    state.last_scanned_height = Some(100);
     let dir = tempfile::tempdir().unwrap();
     store::create(dir.path(), &state).unwrap();
     Fixture { app: App { state: Arc::new(Mutex::new(state)), dir: dir.path().to_path_buf() }, _dir: dir }
@@ -214,6 +216,7 @@ async fn payments_below_the_rescan_window_are_kept() {
 fn next_start_rescans_the_reorg_window() {
     let f = fixture();
     let mut state = f.app.state.blocking_lock().clone();
+    state.last_scanned_height = None;
     assert_eq!(service::next_start(&state, 10), 100, "no cursor: start at the birthday");
     state.last_scanned_height = Some(1_000);
     assert_eq!(service::next_start(&state, 10), 991);
@@ -229,4 +232,47 @@ fn serve_binds_loopback_only() {
     for bad in ["0.0.0.0:7077", "192.168.1.10:7077", "[::]:7077"] {
         assert!(check_loopback(&bad.parse::<SocketAddr>().unwrap()).is_err(), "{bad}");
     }
+}
+
+#[tokio::test]
+async fn mint_waits_for_the_first_scan() {
+    let f = fixture();
+    f.app.state.lock().await.last_scanned_height = None;
+    let (status, body) = call(&f.app, "POST", "/mint", &json!({ "price_zat": PRICE }).to_string()).await;
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(body, json!({ "error": "not_synced" }));
+    assert!(f.app.state.lock().await.purchases.is_empty());
+}
+
+#[tokio::test]
+async fn a_fresh_state_never_reuses_an_index_an_earlier_run_was_paid_at() {
+    let f = fixture();
+    // Earlier runs were paid at +0 and +6; this state has no record of either.
+    record(&f.app, 200, vec![detection(PURCHASE_INDEX_BASE, PRICE, Some(150), 0), detection(PURCHASE_INDEX_BASE + 6, PRICE, Some(151), 0)], None, 100).await;
+    assert_eq!(mint(&f.app).await["index"], json!(PURCHASE_INDEX_BASE + 7));
+}
+
+#[tokio::test]
+async fn ledger_and_health_carry_no_purchase_ids() {
+    let f = fixture();
+    let paid = mint(&f.app).await;
+    mint(&f.app).await;
+    record(&f.app, 200, vec![detection(PURCHASE_INDEX_BASE, PRICE, Some(190), 0), detection(PURCHASE_INDEX_BASE + 9, 50_000, Some(191), 0)], None, 100).await;
+
+    let (status, ledger) = call(&f.app, "GET", "/ledger", "").await;
+    assert_eq!(status, StatusCode::OK);
+    let text = ledger.to_string();
+    assert!(!text.contains(paid["purchase_id"].as_str().unwrap()), "no purchase id in {text}");
+    assert!(!text.contains(paid["address"].as_str().unwrap()), "no address in {text}");
+    assert!(!text.contains(&format!("{:064x}", PURCHASE_INDEX_BASE)), "no txid in {text}");
+    assert_eq!(ledger["scanned_to"], json!(200));
+    let rows = ledger["rows"].as_array().unwrap();
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[0], json!({ "index": 0, "price_zat": PRICE, "received_zat": PRICE, "payments": 1, "height": 190, "status": "paid" }));
+    assert_eq!(rows[1]["status"], json!("pending"));
+    assert_eq!(rows[2], json!({ "index": 9, "price_zat": null, "received_zat": 50_000, "payments": 1, "height": 191, "status": "no_record" }));
+
+    let (status, health) = call(&f.app, "GET", "/health", "").await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(health, json!({ "scanned_to": 200, "purchases": 2 }));
 }

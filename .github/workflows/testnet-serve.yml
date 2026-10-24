@@ -89,6 +89,9 @@ jobs:
 
       - name: Mint over HTTP
         run: |
+          # serve mints nothing until its first scan has finished.
+          for _ in $(seq 1 150); do test "$(curl -sf $SIDECAR/health | jq -r .scanned_to)" != null && break; sleep 2; done
+          curl -sf $SIDECAR/health | jq -e '.scanned_to != null'
           curl -sf -X POST "$SIDECAR/mint" -d '{"price_zat":100000}' > mint.json
           jq . mint.json
           echo "ID=$(jq -r .purchase_id mint.json)" >> "$GITHUB_ENV"

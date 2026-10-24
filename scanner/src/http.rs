@@ -2,6 +2,12 @@
 //!
 //! - `POST /mint {price_zat}` returns `201 {purchase_id, index, address, pay_uri}`
 //! - `GET /purchases/{id}` returns `{status, received_zat, payments, ...}`
+//! - `GET /ledger` returns every purchase by index offset, with no ids: what the
+//!   published incoming viewing key shows anyway, plus status
+//! - `GET /health` returns `{scanned_to, purchases}`
+//!
+//! `POST /mint` answers `503 not_synced` until the first scan has finished, so a fresh
+//! state learns which indexes earlier runs used before it hands one out.
 //!
 //! It logs nothing about requests: no addresses, no timing, no purchase ids.
 
@@ -20,6 +26,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use tokio::sync::Mutex;
 
+use crate::keys::PURCHASE_INDEX_BASE;
 use crate::service;
 use crate::store::{self, State};
 
@@ -33,6 +40,8 @@ pub fn router(app: App) -> Router {
     Router::new()
         .route("/mint", post(mint))
         .route("/purchases/{id}", get(purchase))
+        .route("/ledger", get(ledger))
+        .route("/health", get(health))
         .fallback(|| async { error(StatusCode::NOT_FOUND, "not_found") })
         .with_state(app)
 }
@@ -63,6 +72,9 @@ async fn mint(AxState(app): AxState<App>, body: Bytes) -> Response {
         return error(StatusCode::BAD_REQUEST, "price_zat out of range");
     }
     let mut state = app.state.lock().await;
+    if state.last_scanned_height.is_none() {
+        return error(StatusCode::SERVICE_UNAVAILABLE, "not_synced");
+    }
     let created_height = state.last_scanned_height.unwrap_or(state.merchant.birthday_height);
     let purchase = match service::mint(&mut state, req.price_zat, None, created_height) {
         Ok(p) => p,
@@ -125,4 +137,56 @@ async fn purchase(AxState(app): AxState<App>, Path(id): Path<String>) -> Respons
         "required_confirmations": required,
     }))
     .into_response()
+}
+
+async fn health(AxState(app): AxState<App>) -> Response {
+    let state = app.state.lock().await;
+    Json(json!({ "scanned_to": state.last_scanned_height, "purchases": state.purchases.len() })).into_response()
+}
+
+/// One row per purchase and per payment no purchase owns, ordered by index. No purchase
+/// ids (they fetch signatures), no addresses, no txids, no creation times.
+async fn ledger(AxState(app): AxState<App>) -> Response {
+    let state = app.state.lock().await;
+    let tip = state.last_scanned_height.unwrap_or(0);
+    let required = state.merchant.required_confirmations;
+    let mut rows: Vec<(u64, Value)> = state
+        .purchases
+        .iter()
+        .filter(|p| p.index >= PURCHASE_INDEX_BASE)
+        .map(|p| {
+            let offset = p.index - PURCHASE_INDEX_BASE;
+            let height = p.payments.iter().filter_map(|pay| pay.height).min();
+            (
+                offset,
+                json!({
+                    "index": offset,
+                    "price_zat": p.price_zat,
+                    "received_zat": p.received_zat(),
+                    "payments": p.payments.len(),
+                    "height": height,
+                    "status": p.status(tip, required).code(),
+                }),
+            )
+        })
+        .collect();
+    for u in &state.unattributed {
+        let Some(offset) = u.diversifier_index.parse::<u64>().ok().and_then(|j| j.checked_sub(PURCHASE_INDEX_BASE)) else {
+            continue;
+        };
+        rows.push((
+            offset,
+            json!({
+                "index": offset,
+                "price_zat": null,
+                "received_zat": u.payment.value_zat,
+                "payments": 1,
+                "height": u.payment.height,
+                "status": "no_record",
+            }),
+        ));
+    }
+    rows.sort_by_key(|(offset, _)| *offset);
+    Json(json!({ "scanned_to": state.last_scanned_height, "rows": rows.into_iter().map(|(_, v)| v).collect::<Vec<_>>() }))
+        .into_response()
 }
