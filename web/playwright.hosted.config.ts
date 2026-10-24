@@ -13,5 +13,11 @@ export default defineConfig({
   retries: 0,
   reporter: [['list']],
   outputDir: 'hosted-results/trace',
-  use: { baseURL: process.env.HOSTED_URL, trace: 'retain-on-failure', ...devices['Desktop Chrome'] },
+  use: {
+    baseURL: process.env.HOSTED_URL,
+    trace: 'retain-on-failure',
+    ...devices['Desktop Chrome'],
+    // Behind an egress proxy (some sandboxes), route the browser and API requests through it.
+    ...(process.env.HTTPS_PROXY ? { proxy: { server: process.env.HTTPS_PROXY } } : {}),
+  },
 });
