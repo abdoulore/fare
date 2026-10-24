@@ -25,6 +25,7 @@ export const PROOF: ProofRow[] = [
   { index: 5, amount: '0.0005', height: '4,536,052', txid: '0c3e538be90d9a5bfa60463314a6cd2dd06a092a62486c8dd0f9f39a7a26058d', shows: 'Underpaid: no signatures issued', run: `${RUN}40098320054`, runLabel: 'failure paths' },
   { index: 6, amount: '0.001', height: '4,536,054', txid: '60d3f691c7b71deb4f7eb890f3e2967971c78ced8cf287d62b1d271c7b30ebf3', shows: 'Second payment, first of two', run: `${RUN}40098320054`, runLabel: 'failure paths' },
   { index: 6, amount: '0.001', height: '4,536,061', txid: 'd3529ffb9e1cedcc2cdc0bdb3216de385a0e255db60912ef31d6b700532ba652', shows: 'Second payment: still exactly 100 tokens', run: `${RUN}40098320054`, runLabel: 'failure paths' },
+  { index: 7, amount: '0.001', height: '4,536,656', txid: '5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0', shows: 'Hosted site in a browser: demo payer, 100 tokens, 3 calls, replay refused', run: 'https://github.com/abdoulore/fare/tree/main/docs/hosted', runLabel: 'hosted run' },
 ];
 
 export const CHECK_COMMANDS = `cd scanner && cargo build --release

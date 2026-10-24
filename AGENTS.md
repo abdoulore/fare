@@ -43,7 +43,7 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 | Failure paths, testnet | Oct 26 ([run](https://github.com/abdoulore/fare/actions/runs/40098320054)): paid (+4, tx `b01a1fc0...a4df`, 100 tokens, a call served), underpaid (+5, tx `0c3e538b...058d`, no signatures), paid twice (+6, txs `60d3f691...ebf3` and `d3529ffb...a652`, 200000 zat recorded, still exactly 100 tokens). A watch-only verifier set up from the published incoming viewing key alone listed all four payments by index. Every SPEC failure-path row names its proving test. |
 | Demo viewing key | Published in README (owner approved Oct 26). |
 | `web/` (TypeScript, React) | Built Oct 24. `/`, `/try`, `/server`, `/proof`, `/how`. Tokens blinded, unblinded and stored (IndexedDB) in the browser through `sdk/src/core.ts`. 9 Vitest tests; 22 Playwright tests on a local stack (stub scanner and wallet): the whole buyer flow, replay, underpaid, unlisted key, expired, model failure, no third-party requests, 375 px layout, keyboard, axe WCAG 2.1 AA in both colour schemes. |
-| Hosting | Live at https://fare.moonrider.online (Oct 24), DNS only, Caddy in front. Checked from outside: the four health routes, CORS for the site only, the 402 with the published key, no third-party requests. The hosted scanner, from the viewing key alone, listed the earlier payments +0 to +6, so new purchases start at +7. A paid hosted run is still to do. |
+| Hosting | Live at https://fare.moonrider.online (Oct 24), DNS only, Caddy in front. Checked from outside: the four health routes, CORS for the site only, the 402 with the published key, no third-party requests. The hosted scanner, from the viewing key alone, listed the earlier payments +0 to +6, so new purchases start at +7. Paid hosted run Oct 24 (`web/e2e/hosted.spec.ts`, `docs/hosted/`): demo payer paid +7 in tx `5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0` (height 4,536,656), 100 tokens unblinded in the browser, 3 calls served (simulated answers), replay refused `401 token_reused`, no third-party requests. |
 
 ## Gates
 
@@ -248,7 +248,7 @@ From the spec. Keep these shapes.
 
 **Oct 27: proof and polish.** README with a real-versus-mocked table, threat model and residuals (done Oct 27). CI runs every package: scanner, wallet, issuer, sdk, origin, demo, token canaries.
 
-**Oct 24 (added): frontend.** `web/` with the buyer flow and the public pages, CORS and public id-free views on the services, the demo payer, `deploy/` for one VPS. Remaining: deploy (owner's VPS and domain), one real hosted run on testnet with the demo payer, screenshots in the README.
+**Oct 24 (added): frontend.** `web/` with the buyer flow and the public pages, CORS and public id-free views on the services, the demo payer, `deploy/` for one VPS. Deployed at https://fare.moonrider.online and the paid hosted run done (Oct 24). Remaining: testnet explorer screenshots.
 
 **Oct 28: ship.** Demo video, submission text, repo public.
 

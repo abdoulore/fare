@@ -1,0 +1,67 @@
+{
+  "site": "https://fare.moonrider.online",
+  "at": "2026-10-24T17:44:36.071Z",
+  "payment": {
+    "txids": [
+      "5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0"
+    ],
+    "amount_zec": "0.001",
+    "mode": "full",
+    "paid_by": "fare-demo-wallet"
+  },
+  "issuer_health": {
+    "ok": true,
+    "key_id": "fed4e43313cb3cec0ebbc0715c737fcd3db78c81b80e22d5af93974f75903938",
+    "epoch": 2964,
+    "retires_at": 1793318400,
+    "scanned_to": 4536655
+  },
+  "api_health": {
+    "ok": true,
+    "model": "simulated",
+    "key_id": "fed4e43313cb3cec0ebbc0715c737fcd3db78c81b80e22d5af93974f75903938"
+  },
+  "payer_health": {
+    "ok": true,
+    "balance_zat": 99220000,
+    "empty": false,
+    "network": "test",
+    "packs_left_this_hour": 5
+  },
+  "origin_stats": {
+    "redeemed": 3,
+    "challenged": 3,
+    "refused": {
+      "token_reused": 1,
+      "bad_signature": 0,
+      "unknown_key": 0,
+      "wrong_challenge": 0,
+      "expired_epoch": 0
+    },
+    "spent_by_key": {
+      "fed4e43313cb3cec": 3
+    }
+  },
+  "answers": [
+    "Why does single use matter for a token?\n\nsimulated No model API key on this host, so this answer is canned. You asked 39 characters; a real deployment would send them to the model.",
+    "In one sentence, what is a blind signature?\n\nsimulated No model API key on this host, so this answer is canned. You asked 43 characters; a real deployment would send them to the model.",
+    "What does a shielded Zcash payment hide?\n\nsimulated No model API key on this host, so this answer is canned. You asked 40 characters; a real deployment would send them to the model."
+  ],
+  "external_requests": [],
+  "ledger_row": {
+    "height": 4536656,
+    "index": 7,
+    "payments": 1,
+    "price_zat": 100000,
+    "received_zat": 100000,
+    "status": "paid"
+  },
+  "key": {
+    "key_id": "fed4e43313cb3cec0ebbc0715c737fcd3db78c81b80e22d5af93974f75903938",
+    "epoch": 2964,
+    "not_before": 1792627200,
+    "retires_at": 1793318400,
+    "packs": 1,
+    "issued": 100
+  }
+}

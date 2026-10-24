@@ -36,6 +36,11 @@ It reveals incoming payments to this demo account only: amount, height, address 
 | +5 | 0.0005 | 4,536,052 | `0c3e538be90d9a5bfa60463314a6cd2dd06a092a62486c8dd0f9f39a7a26058d` | Underpaid: no signatures issued | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) |
 | +6 | 0.001 | 4,536,054 | `60d3f691c7b71deb4f7eb890f3e2967971c78ced8cf287d62b1d271c7b30ebf3` | Second payment, first of two | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) |
 | +6 | 0.001 | 4,536,061 | `d3529ffb9e1cedcc2cdc0bdb3216de385a0e255db60912ef31d6b700532ba652` | Second payment: still exactly 100 tokens | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) |
+| +7 | 0.001 | 4,536,656 | `5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0` | Hosted site, in a browser: demo payer paid, 100 tokens unblinded in the page, 3 calls, replay refused | [hosted run](docs/hosted/) |
+
+### The hosted run
+
+On Oct 24, `web/e2e/hosted.spec.ts` drove a real browser through https://fare.moonrider.online: the 402 named the published key, the browser blinded 100 nonces, Fare's demo payer paid 0.001 TAZ in tx `5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0`, the purchase was paid at height 4,536,656 (one confirmation), the browser unblinded 100 tokens, 3 calls were served (answers simulated: no model key on the host), and the replayed token got `401 token_reused`. Afterwards the API counted 3 served and 1 `token_reused`; the issuer counted 1 pack and 100 tokens under the key. No request left the site and its three subdomains. Screenshots and the run record are in [`docs/hosted/`](docs/hosted/).
 
 ### Check it yourself
 
