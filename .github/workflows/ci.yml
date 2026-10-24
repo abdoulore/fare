@@ -112,6 +112,36 @@ jobs:
       - run: npm run typecheck --prefix demo
       - run: npm test --prefix demo
 
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            demo/package-lock.json
+            origin/package-lock.json
+            issuer/package-lock.json
+      - run: npm ci --prefix issuer
+      - run: npm ci --prefix origin
+      - run: npm ci --prefix demo
+      - run: npm ci --prefix web
+      - run: npm run typecheck --prefix web
+      - run: npm test --prefix web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: npx playwright test
+        working-directory: web
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: web/test-results
+          retention-days: 7
+
   token-canary:
     runs-on: ubuntu-latest
     defaults:
