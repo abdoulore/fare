@@ -135,16 +135,47 @@ test('refuses to act on a 402 before a key is pinned', async () => {
   }
 });
 
-test('a pin the directory no longer lists is refused', async () => {
-  const stateFile = join(tempDir(), 'sdk.json');
-  const sdk = client(stateFile);
-  await sdk.pin();
-  const other = await startIssuer(scanner.url);
+test('aborts when the origin presents a key the directory does not list, even after re-reading it', async () => {
+  const stranger = await startIssuer(scanner.url);
+  const strangerKey = (await stranger.issuer.keys.current(stranger.clock.now)).tokenKey;
+  await stranger.close();
+  const origin = await testOrigin(strangerKey, verifyKey);
   try {
-    const moved = new FareClient({ issuerUrl: other.url, stateFile, pollMs: 10 });
-    await assert.rejects(moved.pin(), UnpinnedKeyError);
+    const sdk = client();
+    const pinned = await sdk.pin();
+    await assert.rejects(sdk.fetch(origin.url, {}, payer), /directory does not list/);
+    assert.equal(sdk.pinnedKey, pinned, 'the pin is unchanged');
   } finally {
-    await other.close();
+    await origin.close();
+  }
+});
+
+test('follows a rotation through the directory and drops tokens under the retired key', async () => {
+  const t0 = issuer.clock.now;
+  const oldOrigin = await testOrigin(tokenKey, verifyKey);
+  try {
+    const sdk = client();
+    const oldPin = await sdk.pin();
+    assert.equal((await sdk.fetch(oldOrigin.url, {}, payer)).status, 200);
+    assert.equal(sdk.tokenCount(), PACK - 1);
+
+    // Next epoch, past the grace window: the directory lists only the new key.
+    issuer.clock.now = t0 + 8 * 24 * 3600;
+    const next = await issuer.issuer.keys.current(issuer.clock.now);
+    const nextVerify = await crypto.subtle.importKey('spki', next.pub.export({ type: 'spki', format: 'der' }), { name: 'RSA-PSS', hash: 'SHA-384' }, true, ['verify']);
+    const newOrigin = await testOrigin(next.tokenKey, nextVerify);
+    try {
+      const res = await sdk.fetch(newOrigin.url, {}, payer);
+      assert.equal(res.status, 200);
+      assert.notEqual(sdk.pinnedKey, oldPin);
+      assert.equal(sdk.pinnedKey, Buffer.from(next.tokenKey).toString('base64url'));
+      assert.equal(sdk.tokenCount(), PACK - 1, 'old tokens dropped, a fresh pack bought');
+    } finally {
+      await newOrigin.close();
+    }
+  } finally {
+    issuer.clock.now = t0;
+    await oldOrigin.close();
   }
 });
 

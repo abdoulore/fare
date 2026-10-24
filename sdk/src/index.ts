@@ -9,6 +9,7 @@
 // Tokens are spent once: each is removed from the store before the request carrying it
 // is sent, so a crash can lose a token but never reuse one.
 
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 
 import { AuthorizationHeader, publicVerif, Token, TokenChallenge, WWWAuthenticateHeader } from '@cloudflare/privacypass-ts';
@@ -22,6 +23,14 @@ const MAX_PACK = 1000;
 
 /** The origin presented a key other than the pinned one: possibly a per-user key. */
 export class UnpinnedKeyError extends Error {}
+/** The origin presented a key other than the pinned one. */
+class KeyMismatch extends UnpinnedKeyError {
+  readonly presented: string;
+  constructor(presented: string) {
+    super('origin presented a key other than the pinned one, refusing');
+    this.presented = presented;
+  }
+}
 /** The 402 challenge is not one Fare accepts. */
 export class ChallengeError extends Error {}
 /** No token for this origin and no payer to buy more. */
@@ -72,6 +81,8 @@ interface SdkState {
 
 const b64url = (b: Uint8Array): string => Buffer.from(b).toString('base64url');
 const fromB64url = (s: string): Uint8Array => new Uint8Array(Buffer.from(s, 'base64url'));
+const sha256hex = (b: Uint8Array): string => createHash('sha256').update(b).digest('hex');
+const tokenKeyId = (token: string): string => Buffer.from(Token.deserialize(BLIND_RSA, fromB64url(token)).authInput.tokenKeyId).toString('hex');
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function parseOffer(header: string | null): Offer | undefined {
@@ -117,23 +128,52 @@ export class FareClient {
     return challenge ? this.state.tokens.filter((t) => t.challenge === challenge).length : this.state.tokens.length;
   }
 
-  /**
-   * Pins the issuer's key. With no pin yet, the newest directory key is pinned. With a
-   * pin, the directory must still list it, or this throws.
-   */
-  async pin(): Promise<string> {
+  private async directoryKeys(): Promise<string[]> {
     const res = await fetch(`${this.issuerUrl}${DIRECTORY_PATH}`);
     if (!res.ok) throw new PurchaseError(`issuer directory unavailable (${res.status})`);
     const dir = (await res.json()) as { 'token-keys'?: { 'token-type': number; 'token-key': string; 'not-before'?: number }[] };
     const keys = (dir['token-keys'] ?? []).filter((k) => k['token-type'] === 2).map((k) => k['token-key']);
     if (keys.length === 0) throw new PurchaseError('issuer directory lists no type 2 key');
-    if (this.state.pinnedKey) {
-      if (!keys.includes(this.state.pinnedKey)) throw new UnpinnedKeyError('issuer directory no longer lists the pinned key');
-      return this.state.pinnedKey;
-    }
-    this.state.pinnedKey = keys[0];
+    return keys;
+  }
+
+  /** Pins `key` and drops stored tokens under keys the directory no longer lists. */
+  private adopt(directory: string[], key: string): void {
+    const liveIds = new Set(directory.map((k) => sha256hex(fromB64url(k))));
+    this.state.pinnedKey = key;
+    this.state.tokens = this.state.tokens.filter((t) => liveIds.has(tokenKeyId(t.token)));
     this.save();
+  }
+
+  /**
+   * Pins the issuer's key: the newest directory key when nothing is pinned, or when the
+   * directory no longer lists the pinned one (the issuer rotated). Tokens under keys
+   * that left the directory are dropped: the origin would refuse them.
+   */
+  async pin(): Promise<string> {
+    const keys = await this.directoryKeys();
+    if (this.state.pinnedKey && keys.includes(this.state.pinnedKey)) return this.state.pinnedKey;
+    this.adopt(keys, keys[0]);
     return keys[0];
+  }
+
+  /**
+   * checkChallenge, following a rotation: when the origin presents a key other than the
+   * pinned one, the issuer directory is read again and the key is accepted only if the
+   * directory lists it. Any other key aborts (invariant 6).
+   */
+  async acceptChallenge(header: string | null): Promise<WWWAuthenticateHeader> {
+    try {
+      return this.checkChallenge(header);
+    } catch (e) {
+      if (!(e instanceof KeyMismatch)) throw e;
+      const keys = await this.directoryKeys();
+      if (!keys.includes(e.presented)) {
+        throw new UnpinnedKeyError('origin presented a key the issuer directory does not list, refusing');
+      }
+      this.adopt(keys, e.presented);
+      return this.checkChallenge(header);
+    }
   }
 
   /** Parses a 402's WWW-Authenticate and checks it against the pin. Throws before any order. */
@@ -150,9 +190,7 @@ export class FareClient {
     const c = ours[0];
     if (c.challenge.redemptionContext.length !== 0) throw new ChallengeError('challenge must use an empty redemption context');
     if (!this.state.pinnedKey) throw new UnpinnedKeyError('no issuer key pinned yet, call pin() first');
-    if (b64url(c.tokenKey) !== this.state.pinnedKey) {
-      throw new UnpinnedKeyError('origin presented a key other than the pinned one, refusing');
-    }
+    if (b64url(c.tokenKey) !== this.state.pinnedKey) throw new KeyMismatch(b64url(c.tokenKey));
     return c;
   }
 
@@ -231,7 +269,7 @@ export class FareClient {
   async fetch(url: string, init: RequestInit = {}, payer?: Payer): Promise<Response> {
     const first = await fetch(url, init);
     if (first.status !== 402) return first;
-    const challenge = this.checkChallenge(first.headers.get('www-authenticate'));
+    const challenge = await this.acceptChallenge(first.headers.get('www-authenticate'));
     const offer = parseOffer(first.headers.get('fare-offer'));
     let auth = this.spend(challenge);
     if (!auth) {
