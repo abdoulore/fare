@@ -36,7 +36,9 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 | `scanner/` (Rust) | Built. 29 tests green, clippy clean. `serve` added Oct 24; testnet proof pending. |
 | `wallet/` (Rust) | Built Oct 24. 26 tests green, clippy clean. Paid both canary purchases on testnet. |
 | `token-canary/` (Node) | Passed 11 of 11 checks with 100 tokens. Native signing measured. |
-| Issuer, origin, SDK, demo API, panel | Not started. Gate 1 passed; next up. |
+| `issuer/` (TypeScript) | Built Oct 24. 19 tests green, typecheck clean. Native signing, 7-day epoch keys. |
+| `sdk/` (TypeScript) | Built Oct 24. 11 tests green against the real issuer with a stub scanner. |
+| Origin, demo API, panel | Not started. Oct 25. |
 
 ## Gates
 
@@ -97,11 +99,18 @@ fare/
     src/wallet.rs      database, sync, balance, address, propose, build, broadcast
     src/cache.rs       in-memory BlockCache for sync::run
     tests/             refusals, CLI, source invariants
+  issuer/              TypeScript (Node 22 type stripping, no build step)
+    src/app.ts         directory, POST and GET /fare/purchases
+    src/keys.ts        one key per 7-day epoch, 24 h grace, stored in issuer-data/keys
+    src/sign.ts        native blind RSA with verify-before-release
+    src/store.ts       purchases: id, epoch, blinded requests, pay URI, expiry
+    src/scanner.ts     client for fare-scanner serve
+  sdk/                 TypeScript client: pin, 402 handling, order, collect, spend
   token-canary/        Node: Privacy Pass proof (canary.mjs, native-sign.mjs)
   .github/workflows/   ci.yml, testnet-canary.yml, testnet-wallet.yml, testnet-serve.yml
 ```
 
-Planned, create as needed: `issuer/` (TypeScript: purchases API, epoch keys, issuer directory), `origin/` (TypeScript: 402 middleware, verify, spent-nonce store), `sdk/` (TypeScript client), `demo/` (demo API and agent loop), `panel/` (server-view panel).
+Planned, create as needed: `origin/` (TypeScript: 402 middleware, verify, spent-nonce store), `demo/` (demo API and agent loop), `panel/` (server-view panel).
 
 ## Commands
 
@@ -124,6 +133,11 @@ cargo test && cargo clippy --all-targets -- -D warnings
 ./target/release/fare-wallet init --birthday H
 ./target/release/fare-wallet sync | balance | address
 ./target/release/fare-wallet pay "zcash:<UA>?amount=0.001" --max-zec 0.002 [--wait-secs N]
+
+cd issuer && npm ci && npm test && npm run typecheck
+npm start                        # ISSUER_LISTEN, ISSUER_DATA, SCANNER_URL
+
+cd sdk && npm ci --prefix ../issuer && npm ci && npm test
 
 cd token-canary
 npm install
@@ -188,8 +202,9 @@ From the spec. Keep these shapes.
 
 - Origin, no token: `402` with `WWW-Authenticate: PrivateToken challenge=..., token-key=...` and `Fare-Offer: {"pack": N, "price_zec": "...", "issuer": "<url>"}`.
 - `GET /.well-known/private-token-issuer-directory` in RFC 9578 format: `issuer-request-uri` plus `token-keys` entries of `{token-type: 2, token-key: <base64url SPKI>, not-before}`.
-- `POST /fare/purchases` with `{pack, blinded: [base64url, ...N]}` returns `201 {purchase_id, pay_uri, expires_at}`. `purchase_id` is 128 random bits, hex.
-- `GET /fare/purchases/{id}` returns `{status}`; once paid, `{status: "paid", signatures: [base64url, ...N]}` in request order.
+- `POST /fare/purchases` with `{pack, blinded: [base64url, ...N]}` returns `201 {purchase_id, pay_uri, expires_at}`. Each `blinded` entry is a whole serialized `TokenRequest` (259 bytes), so the issuer knows the key. `purchase_id` is 128 random bits, hex (the scanner's id). `expires_at` is ISO 8601, 24 h out.
+- Purchase refusals are `400 {error}`: `wrong_pack`, `wrong_count`, `malformed_request`, `duplicate_request`, `unknown_key`, `unknown_field`, `body_not_json`; `413 body_too_large`; `503 scanner_unavailable`.
+- `GET /fare/purchases/{id}` returns `{status}` (`pending`, `in_mempool`, `confirming`, `underpaid`, `expired`); once paid, `{status: "paid", signatures: [base64url, ...N]}` in request order, plus `warning: "funded_from_transparent_inputs"` when flagged. A paid purchase whose key retired is `410 {status: "key_retired"}`.
 - Redemption: `Authorization: PrivateToken token="<base64url>"`. Failures return `401` with one of `token_reused`, `bad_signature`, `unknown_key`, `wrong_challenge`, `expired_epoch`.
 - Scanner sidecar (`fare-scanner serve`): loopback only. `POST /mint {price_zat}` returns `201 {purchase_id, index, address, pay_uri}`; `GET /purchases/{id}` returns `{status, received_zat, payments, price_zat, leaky_funding, scanned_to, required_confirmations}`. `status` is one of `pending`, `in_mempool`, `confirming`, `paid`, `underpaid`. Ids are 128 bits, hex. Errors are `{error}` with 400 or 404.
 

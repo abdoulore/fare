@@ -56,6 +56,23 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            sdk/package-lock.json
+            issuer/package-lock.json
+      # The SDK tests run against the real issuer, so it needs its packages too.
+      - run: npm ci --prefix issuer
+      - run: npm ci --prefix sdk
+      - run: npm run typecheck --prefix sdk
+      - run: npm test --prefix sdk
+
   token-canary:
     runs-on: ubuntu-latest
     defaults:
