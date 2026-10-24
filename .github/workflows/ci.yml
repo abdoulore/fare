@@ -113,7 +113,8 @@ jobs:
       - run: npm test --prefix demo
 
   web:
-    runs-on: ubuntu-latest
+    # Playwright 1.56 installs browsers on Ubuntu 24.04, not on 26.04 (ubuntu-latest).
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
