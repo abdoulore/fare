@@ -1,0 +1,26 @@
+[Unit]
+Description=Fare demo payer (testnet fare-wallet, rate limited)
+After=network-online.target
+
+[Service]
+User=fare
+Group=fare
+WorkingDirectory=/opt/fare/src/demo
+EnvironmentFile=/etc/fare/site.env
+EnvironmentFile=/etc/fare/payer.env
+Environment=PAYER_LISTEN=127.0.0.1:8791
+Environment=FARE_WALLET=/opt/fare/bin/fare-wallet
+Environment=WALLET_DIR=/var/lib/fare/wallet
+Environment=PAYER_MAX_PER_HOUR=5
+Environment=PAYER_TRUST_PROXY=1
+ExecStart=/bin/sh -c 'WEB_ORIGINS=https://$FARE_DOMAIN exec node src/payer-main.ts'
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/fare/wallet
+
+[Install]
+WantedBy=multi-user.target

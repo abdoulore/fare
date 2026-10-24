@@ -1,0 +1,28 @@
+[Unit]
+Description=Fare demo API behind the origin middleware
+After=fare-issuer.service
+
+[Service]
+User=fare
+Group=fare
+WorkingDirectory=/opt/fare/src/demo
+EnvironmentFile=/etc/fare/site.env
+EnvironmentFile=-/etc/fare/api.env
+Environment=API_LISTEN=127.0.0.1:8080
+Environment=PANEL_LISTEN=127.0.0.1:8790
+Environment=ISSUER_URL=http://127.0.0.1:8787
+Environment=ORIGIN_DATA=/var/lib/fare/origin
+Environment=ISSUER_DATA=/var/lib/fare/issuer
+Environment=SCANNER_URL=http://127.0.0.1:7077
+ExecStart=/bin/sh -c 'WEB_ORIGINS=https://$FARE_DOMAIN ISSUER_PUBLIC_URL=https://issuer.$FARE_DOMAIN ORIGIN_NAME=api.$FARE_DOMAIN ISSUER_NAME=issuer.$FARE_DOMAIN exec node src/main.ts'
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/fare/origin
+ReadOnlyPaths=/var/lib/fare/issuer
+
+[Install]
+WantedBy=multi-user.target

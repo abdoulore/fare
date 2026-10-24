@@ -1,0 +1,24 @@
+[Unit]
+Description=Fare issuer (purchases, blind signing)
+After=fare-scanner.service
+Requires=fare-scanner.service
+
+[Service]
+User=fare
+Group=fare
+WorkingDirectory=/opt/fare/src/issuer
+EnvironmentFile=/etc/fare/site.env
+Environment=ISSUER_LISTEN=127.0.0.1:8787
+Environment=ISSUER_DATA=/var/lib/fare/issuer
+Environment=SCANNER_URL=http://127.0.0.1:7077
+ExecStart=/bin/sh -c 'WEB_ORIGINS=https://$FARE_DOMAIN exec node src/main.ts'
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/fare/issuer
+
+[Install]
+WantedBy=multi-user.target

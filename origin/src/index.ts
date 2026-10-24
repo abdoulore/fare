@@ -28,6 +28,8 @@ export interface OriginOptions {
   issuerName: string;
   /** Where the issuer directory is fetched from. */
   issuerUrl: string;
+  /** The issuer URL advertised to clients in Fare-Offer, when it differs from issuerUrl. */
+  publicIssuerUrl?: string;
   /** Offer advertised on 402. */
   pack: number;
   priceZec: string;
@@ -108,7 +110,7 @@ export function createOrigin(opts: OriginOptions) {
     stats.challenged += 1;
     return {
       'www-authenticate': new WWWAuthenticateHeader(challenge, live[0].tokenKey).toString(),
-      'fare-offer': JSON.stringify({ pack: opts.pack, price_zec: opts.priceZec, issuer: opts.issuerUrl }),
+      'fare-offer': JSON.stringify({ pack: opts.pack, price_zec: opts.priceZec, issuer: opts.publicIssuerUrl ?? opts.issuerUrl }),
       'cache-control': 'no-store',
     };
   }

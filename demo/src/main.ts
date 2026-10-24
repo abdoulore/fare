@@ -3,6 +3,7 @@
 //   API_LISTEN     public API, host:port (default 127.0.0.1:8080)
 //   PANEL_LISTEN   panel, loopback only (default 127.0.0.1:8790)
 //   ISSUER_URL     issuer the origin reads keys from (default http://127.0.0.1:8787)
+//   ISSUER_PUBLIC_URL   issuer URL advertised in Fare-Offer (default ISSUER_URL)
 //   ISSUER_NAME    issuer name in challenges (default issuer.fare.demo)
 //   ORIGIN_NAME    this origin's name in challenges (default api.fare.demo)
 //   ORIGIN_DATA    spent-nonce store (default origin-data)
@@ -38,6 +39,7 @@ const origin = createOrigin({
   originName: env.ORIGIN_NAME ?? 'api.fare.demo',
   issuerName: env.ISSUER_NAME ?? 'issuer.fare.demo',
   issuerUrl: env.ISSUER_URL ?? 'http://127.0.0.1:8787',
+  publicIssuerUrl: env.ISSUER_PUBLIC_URL,
   pack: PACK,
   priceZec,
   dataDir: env.ORIGIN_DATA ?? 'origin-data',

@@ -1,0 +1,48 @@
+# Fare on one VPS (owner decision D2). Caddy terminates TLS and proxies to services that
+# listen on loopback only. No access log is configured: Caddy writes none by default, so
+# no client address is recorded next to anything (invariant 8).
+#
+# Needs DNS A/AAAA records for {$FARE_DOMAIN}, api., issuer. and payer. pointing here.
+
+{
+	email {$FARE_ACME_EMAIL}
+}
+
+(headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+}
+
+{$FARE_DOMAIN} {
+	import headers
+	root * /srv/fare/web
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'self' https://api.{$FARE_DOMAIN} https://issuer.{$FARE_DOMAIN} https://payer.{$FARE_DOMAIN}; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+	}
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	try_files {path} /index.html
+	file_server
+}
+
+issuer.{$FARE_DOMAIN} {
+	import headers
+	reverse_proxy 127.0.0.1:8787
+}
+
+api.{$FARE_DOMAIN} {
+	import headers
+	reverse_proxy 127.0.0.1:8080
+}
+
+payer.{$FARE_DOMAIN} {
+	import headers
+	# Caddy sets X-Forwarded-For to the client address and drops one the client sent,
+	# so the payer's per-visitor cap sees the real client (PAYER_TRUST_PROXY=1).
+	reverse_proxy 127.0.0.1:8791
+}

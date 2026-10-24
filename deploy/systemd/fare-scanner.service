@@ -1,0 +1,19 @@
+[Unit]
+Description=Fare scanner sidecar (loopback, viewing key only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=fare
+Group=fare
+ExecStart=/opt/fare/bin/fare-scanner --dir /var/lib/fare/scanner serve --listen 127.0.0.1:7077 --interval 15 --reorg-depth 10
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/fare/scanner
+
+[Install]
+WantedBy=multi-user.target

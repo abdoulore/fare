@@ -85,6 +85,12 @@ test('402 carries one type 2 challenge for this origin, the newest issuer key, a
   }
 });
 
+test('the offer can advertise a public issuer URL other than the one keys are read from', async () => {
+  const origin = createOrigin({ originName: ORIGIN_NAME, issuerName: ISSUER_NAME, issuerUrl: issuer.url, publicIssuerUrl: 'https://issuer.fare.example', pack: PACK, priceZec: '0.001', dataDir: tempDir() });
+  const headers = await origin.challengeHeaders();
+  assert.equal(JSON.parse(headers['fare-offer']).issuer, 'https://issuer.fare.example');
+});
+
 test('end to end: the SDK buys a pack and every call spends one token', async () => {
   const o = await startOrigin();
   try {
