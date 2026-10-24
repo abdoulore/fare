@@ -40,6 +40,8 @@ test('402, buy, demo payer, paid, 100 tokens, 3 calls, replay and model failure 
   await expect(page.getByTestId('demo-paid')).toContainText(/txid [0-9a-f]{64}/);
   await expect(page.getByTestId('status-label')).toHaveText('paid');
   await expect(page.getByTestId('tokens-left')).toHaveText('100');
+  await expect(page.getByTestId('payment-receipt')).toContainText(/sent 0\.001 TAZ by the demo wallet, txid [0-9a-f]{64}/);
+  await expect(page.getByRole('heading', { name: 'Use' })).toBeFocused();
 
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Ask with one token' }).click(), await expect(page.getByTestId('tokens-left')).toHaveText(String(99 - i));
   await expect(page.getByTestId('answers').locator('.badge.sim')).toHaveCount(3);
@@ -48,7 +50,9 @@ test('402, buy, demo payer, paid, 100 tokens, 3 calls, replay and model failure 
   await expect(page.getByTestId('replay-refused')).toContainText('401 token_reused');
   await expect(page.getByTestId('tokens-left')).toHaveText('97');
 
-  await page.getByLabel('Question').fill('#fail this one');
+  // Once tokens are held, the Use step has its own question box beside its buttons.
+  await expect(page.locator('#prompt-use')).toBeVisible();
+  await page.locator('#prompt-use').fill('#fail this one');
   await page.getByRole('button', { name: 'Ask with one token' }).click();
   await expect(page.getByTestId('call-refused')).toContainText('model_unavailable');
   await expect(page.getByTestId('call-refused')).toContainText('cannot refund it');
@@ -77,7 +81,13 @@ test('402, buy, demo payer, paid, 100 tokens, 3 calls, replay and model failure 
   await page.goto('/try');
   await expect(page.getByTestId('tokens-total')).toHaveText('96 unspent');
   await page.getByRole('button', { name: 'Forget my tokens' }).click();
+  await expect(page.getByText('Delete 96 unspent tokens? They cannot be recovered.')).toBeVisible();
+  await page.getByRole('button', { name: 'Keep them' }).click();
+  await expect(page.getByTestId('tokens-total')).toHaveText('96 unspent');
+  await page.getByRole('button', { name: 'Forget my tokens' }).click();
+  await page.getByRole('button', { name: 'Delete them' }).click();
   await expect(page.getByTestId('tokens-total')).toHaveText('0 unspent');
+  await expect(page.getByRole('button', { name: 'Forget my tokens' })).toBeDisabled();
 
   expect(external, 'no request left the local stack').toEqual([]);
 });
@@ -88,7 +98,9 @@ test('an underpaid purchase gets no tokens', async ({ page }) => {
   await page.getByRole('button', { name: 'Pay half (shows underpaid)' }).click();
   await expect(page.getByTestId('demo-paid')).toContainText('Sent 0.0005 TAZ');
   await expect(page.getByTestId('status-label')).toHaveText('underpaid');
-  await expect(page.getByTestId('dead')).toContainText('No signatures are issued');
+  await expect(page.getByTestId('status')).toContainText('No signatures are issued');
+  await expect(page.getByTestId('dead')).toContainText('No tokens from this purchase');
+  await expect(page.getByTestId('payment-receipt')).toContainText('sent 0.0005 TAZ by the demo wallet');
   await expect(page.getByTestId('tokens-left')).toHaveText('0');
   await expect(page.getByRole('button', { name: 'Ask with one token' })).toBeDisabled();
 });
@@ -113,7 +125,8 @@ test('an expired purchase says so and offers a new one', async ({ page }) => {
   await ask(page);
   await buy(page);
   await expect(page.getByTestId('status-label')).toHaveText('expired');
-  await expect(page.getByTestId('dead')).toContainText('Order again');
+  await expect(page.getByTestId('status')).toContainText('Order again');
+  await expect(page.getByTestId('dead')).toContainText('No tokens from this purchase');
   await expect(page.getByTestId('tokens-left')).toHaveText('0');
 });
 

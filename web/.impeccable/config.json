@@ -1,3 +1,18 @@
 {
-  "telemetry": false
+  "telemetry": false,
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "**"
+        ],
+        "createdAt": "2026-10-24T19:56:54.987Z",
+        "reason": "Locked light-mode background of the Quiet ledger look (owner decision D1, Oct 24)"
+      }
+    ]
+  }
 }

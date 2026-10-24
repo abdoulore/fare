@@ -1,7 +1,7 @@
 // /try: ask, buy, pay, wait, use. Tokens are blinded and unblinded in this browser; the
 // issuer sees blinded requests, the API sees tokens, and neither sees both.
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 
 import {
   b64url,
@@ -97,6 +97,10 @@ export function Try() {
   const [groups, setGroups] = useState<TokenGroup[]>([]);
   const [counterTick, setCounterTick] = useState(0);
   const nextId = useRef(1);
+  const [confirmForget, setConfirmForget] = useState(false);
+  const payHeading = useRef<HTMLHeadingElement>(null);
+  const waitHeading = useRef<HTMLHeadingElement>(null);
+  const useHeading = useRef<HTMLHeadingElement>(null);
 
   // Open the store, load the client and pin the issuer key from the published directory.
   useEffect(() => {
@@ -151,6 +155,7 @@ export function Try() {
           if (!alive) return;
           setIssued(n);
           setCounterTick((t) => t + 1);
+          requestAnimationFrame(() => useHeading.current?.focus());
           await refreshGroups();
           rerender();
           return;
@@ -250,6 +255,7 @@ export function Try() {
       setBlinding({ done: probe.offer.pack, total: probe.offer.pack, ms: Math.round(performance.now() - t0) });
       setPurchase(p);
       setStatus(viewStatus('pending'));
+      requestAnimationFrame(() => payHeading.current?.focus());
     } catch (e) {
       setOrderError((e as Error).message);
       setBlinding(undefined);
@@ -265,6 +271,7 @@ export function Try() {
     setWaitFrom(Date.now());
     try {
       setPayment(await demoPay(purchase.pay_uri, mode));
+      requestAnimationFrame(() => waitHeading.current?.focus());
     } catch (e) {
       setPayError(payerRefusal((e as Error).message));
       setWaitFrom(undefined);
@@ -303,12 +310,20 @@ export function Try() {
 
   async function onForget() {
     if (!client || !store) return;
+    setConfirmForget(false);
     await client.forget();
     await store.clear();
     await client.pin();
     setGroups([]);
     setLastAuth(undefined);
     rerender();
+  }
+
+  function submitOnModEnter(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      e.currentTarget.form?.requestSubmit();
+    }
   }
 
   function reset() {
@@ -321,6 +336,14 @@ export function Try() {
     setBlinding(undefined);
     setWarning(undefined);
   }
+
+  const awaitingTokens = purchase !== undefined && issued === undefined && status?.final !== true;
+  useEffect(() => {
+    if (!awaitingTokens) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [awaitingTokens]);
 
   if (setupError) {
     return (
@@ -339,6 +362,7 @@ export function Try() {
   const stepClass = (n: number) => {
     const reached = [true, challengeOk, ordered, ordered && (payment !== undefined || status !== undefined), paid || canUse][n - 1];
     const finished = [challengeOk, ordered, payment !== undefined || (status?.step ?? 0) > 0, paid, false][n - 1];
+    if (n === 4 && dead) return 'dead';
     return finished ? 'done' : reached ? 'active' : 'locked';
   };
 
@@ -356,13 +380,13 @@ export function Try() {
           <form onSubmit={onAsk} className="stack">
             <div>
               <label htmlFor="prompt">Question</label>
-              <textarea id="prompt" value={prompt} maxLength={4000} onChange={(e) => setPrompt(e.target.value)} />
+              <textarea id="prompt" value={prompt} maxLength={4000} onChange={(e) => setPrompt(e.target.value)} onKeyDown={submitOnModEnter} />
             </div>
             <div className="row">
               <button type="submit" className={canUse ? undefined : 'primary'} disabled={!client || busy}>
                 {canUse ? 'Ask again without a token' : 'Ask without a token'}
               </button>
-              <label className="row muted" htmlFor="tamper">
+              <label className="check muted" htmlFor="tamper">
                 <input id="tamper" type="checkbox" checked={tamper} onChange={(e) => setTamper(e.target.checked)} />
                 Simulate a malicious API that swaps the challenge key
               </label>
@@ -426,10 +450,14 @@ export function Try() {
                     <dt>Expires</dt>
                     <dd className="mono">{new Date(purchase.expires_at).toUTCString()}</dd>
                   </dl>
-                  <p className="note">
-                    A fresh shielded-only address, made for this purchase alone. The purchase id stays in this tab, and so does the blinding state: keep the tab open until your
-                    tokens arrive.
-                  </p>
+                  {paid ? (
+                    <p className="note">A fresh shielded-only address, made for this purchase alone.</p>
+                  ) : (
+                    <p className="note">
+                      A fresh shielded-only address, made for this purchase alone. The purchase id stays in this tab, and so does the blinding state: keep the tab open
+                      until your tokens arrive.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -437,7 +465,7 @@ export function Try() {
         </li>
 
         <li className={canUse && !ordered ? 'done' : stepClass(3)}>
-          <h2>Pay</h2>
+          <h2 ref={payHeading} tabIndex={-1}>Pay</h2>
           {purchase && !paid && !dead && (
             <div className="pay-options">
               <div className="panel stack">
@@ -483,13 +511,21 @@ export function Try() {
               </div>
             </div>
           )}
-          {paid && <p className="muted">Paid.</p>}
+          {payment && (paid || dead) && (
+            <p className="mono muted" data-testid="payment-receipt">
+              sent {payment.amount_zec} TAZ by the demo wallet{payment.txids.length > 0 ? ', txid ' : ''}
+              {payment.txids.map((t) => (
+                <Txid key={t} txid={t} />
+              ))}
+            </p>
+          )}
+          {paid && !payment && <p className="muted">Paid.</p>}
         </li>
 
         <li className={stepClass(4)}>
-          <h2>Wait</h2>
+          <h2 ref={waitHeading} tabIndex={-1}>Wait</h2>
           {status && (
-            <div className="panel" aria-live="polite" data-testid="status">
+            <div className="panel" data-testid="status">
               {status.step >= 0 ? (
                 <div className="track" aria-hidden="true">
                   {STEPS.map((s, i) => (
@@ -499,20 +535,20 @@ export function Try() {
                   ))}
                 </div>
               ) : null}
-              <p>
+              <p aria-live="polite">
                 <span className={`badge ${status.tone === 'paid' ? 'paid' : status.tone === 'refused' ? 'refused' : 'accent'}`} data-testid="status-label">
                   {status.label}
                 </span>{' '}
                 {status.detail}
               </p>
               {waitFrom !== undefined && !paid && !dead && (
-                <p className="mono muted">
+                <p className="mono muted" aria-live="off">
                   waiting {elapsed(waitFrom, now)} · one confirmation takes about 75 s
                 </p>
               )}
               {dead && (
                 <div className="refusal" role="alert" data-testid="dead">
-                  <strong>No tokens.</strong> {status.detail}{' '}
+                  <strong>No tokens from this purchase.</strong>{' '}
                   <button type="button" className="link" onClick={reset}>
                     Start a new purchase
                   </button>
@@ -528,24 +564,34 @@ export function Try() {
         </li>
 
         <li className={canUse ? 'active' : 'locked'}>
-          <h2>Use</h2>
+          <h2 ref={useHeading} tabIndex={-1}>Use</h2>
           <div className="stack">
             <div className="row">
               <div>
-                <div key={counterTick} className="counter tick" data-testid="tokens-left" aria-live="polite">
-                  {usable}
+                <div className="counter" aria-live="polite" aria-atomic="true">
+                  <span key={counterTick} className="tick" data-testid="tokens-left">
+                    {usable}
+                  </span>
                 </div>
                 <div className="muted">tokens left for this API</div>
               </div>
             </div>
             {paid && <p className="ok"><strong>{issued} tokens unblinded in this browser.</strong> The issuer signed them without seeing them.</p>}
-            <form onSubmit={onUse} className="row">
+            <form onSubmit={onUse} className="stack">
+              {canUse && (
+                <div>
+                  <label htmlFor="prompt-use">Question</label>
+                  <textarea id="prompt-use" value={prompt} maxLength={4000} onChange={(e) => setPrompt(e.target.value)} onKeyDown={submitOnModEnter} />
+                </div>
+              )}
+              <div className="row">
               <button type="submit" className="primary" disabled={!canUse || busy}>
                 Ask with one token
               </button>
               <button type="button" onClick={() => void onReplay()} disabled={!lastAuth || busy}>
                 Replay my last token
               </button>
+              </div>
             </form>
             {exchanges.length > 0 && (
               <ul className="answers" data-testid="answers">
@@ -584,9 +630,23 @@ export function Try() {
           Stored in this browser's IndexedDB{persistent ? '' : ' (unavailable here, so only for this tab)'}. They leave it one at a time, each inside a single call.
         </p>
         <div className="row">
-          <button type="button" onClick={() => void onForget()} disabled={!client}>
-            Forget my tokens
-          </button>
+          {confirmForget ? (
+            <span className="confirm" role="group" aria-label="Confirm forgetting tokens">
+              <span>
+                Delete {tokens} unspent {tokens === 1 ? 'token' : 'tokens'}? They cannot be recovered.
+              </span>
+              <button type="button" onClick={() => void onForget()}>
+                Delete them
+              </button>
+              <button type="button" onClick={() => setConfirmForget(false)}>
+                Keep them
+              </button>
+            </span>
+          ) : (
+            <button type="button" onClick={() => setConfirmForget(true)} disabled={!client || tokens === 0}>
+              Forget my tokens
+            </button>
+          )}
           <Link to="/server">See what the server saw</Link>
         </div>
       </section>

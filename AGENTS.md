@@ -76,6 +76,7 @@ Do not change these without the owner.
 | Hosted payer (D3) | Both: the demo payer first (server-side `fare-wallet`, labeled as Fare's, 5 packs an hour, max 0.001 TAZ), and a QR for the visitor's own Ironwood wallet (owner, Oct 24) |
 | Public server view (D4) | Purchase index, amount, height, status, redemption counts per key, anonymity-set size. Never purchase ids: they fetch signatures (owner, Oct 24) |
 | Hosted answers (D5) | Real Claude answers if the host has `ANTHROPIC_API_KEY`, otherwise simulated and labeled on every answer (owner, Oct 24) |
+| Design check | impeccable (github.com/pbakaus/impeccable, Apache-2.0) as a dev-time check for `web/` only, telemetry off. Never shipped to buyers (owner, Oct 24). See "Dev-only tools" |
 
 ## Open decisions
 
@@ -120,7 +121,8 @@ fare/
   origin/              TypeScript middleware: 402 challenge, invariant 9 checks, spent-nonce store
   demo/                TypeScript: LLM proxy (src/server.ts, src/llm.ts), agent (src/agent.ts), panel (src/panel.ts),
                        demo payer (src/payer.ts, src/payer-main.ts)
-  web/                 Vite + React frontend; e2e/stack.ts is the local stack Playwright runs against
+  web/                 Vite + React frontend; e2e/stack.ts is the local stack Playwright runs against;
+                       scripts/design-check.sh and .impeccable/config.json for the dev-only design check
   deploy/              one-VPS deployment: Caddyfile, systemd units, setup.sh, env templates
   token-canary/        Node: Privacy Pass proof (canary.mjs, native-sign.mjs)
   .github/workflows/   ci.yml, testnet-canary.yml, testnet-wallet.yml, testnet-serve.yml, testnet-demo.yml, testnet-failure-paths.yml
@@ -164,12 +166,24 @@ cd demo && npm run payer                  # demo payer on 127.0.0.1:8791 (FARE_P
 cd web && npm ci && npm test              # Vitest
 cd web && npx playwright test             # builds, starts e2e/stack.ts, runs the browser tests
 cd web && npm run dev                     # against a local issuer, API and payer
+cd web && npm run design:check            # impeccable, dev-only, telemetry off; must stay clean
 
 cd token-canary
 npm install
 node canary.mjs                  # N=100 by default
 node native-sign.mjs
 ```
+
+## Dev-only tools
+
+**impeccable** (owner approved Oct 24) checks `web/` for design and accessibility defects. It is a dev-time tool and never ships to buyers:
+
+- It is a pinned `devDependency` of `web/` (`impeccable` 4.7.0). Nothing from it is imported by the app, and the built site contains no trace of it (invariant 12 is unaffected).
+- Telemetry is off twice: set `IMPECCABLE_NO_TELEMETRY=1` wherever it runs, and keep `"telemetry": false` in `web/.impeccable/config.json`. `detect` runs offline.
+- `npm run design:check` in `web/` (and CI's web job) scans the source and `/`, `/try`, `/server` rendered on the local e2e stack at 1280 and 375 px. It must stay clean.
+- Waivers go in `web/.impeccable/config.json` with a reason. The only one: `cream-palette`, because the warm light background is the locked Quiet ledger palette.
+- Allowed: `detect`, and the `critique`, `audit` and `polish` playbooks. Not allowed: `init` or any new-design flow (`shape`, `craft`, `live`, `generate`), and `bolder`, `colorize` or `animate`: the Quiet ledger look (D1) is locked.
+- Running as root (Claude Code sandboxes), Chromium needs `--no-sandbox`: point `IMPECCABLE_BROWSER` at a wrapper that adds it. CI runners do not need this.
 
 ## Privacy invariants
 

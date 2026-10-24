@@ -55,7 +55,7 @@ export function Server() {
               <thead>
                 <tr>
                   <th scope="col">Index</th>
-                  <th scope="col" className="num">Received</th>
+                  <th scope="col" className="num">Received (TAZ)</th>
                   <th scope="col" className="num">Height</th>
                   <th scope="col">Status</th>
                 </tr>
@@ -96,7 +96,9 @@ export function Server() {
             <dd className="mono">{stats?.challenged ?? '–'}</dd>
             {Object.entries(stats?.spent_by_key ?? {}).map(([k, n]) => (
               <div key={k} className="contents">
-                <dt>Spent under key {k.slice(0, 12)}</dt>
+                <dt>
+                  Spent under key <span className="mono">{k.slice(0, 12)}</span>
+                </dt>
                 <dd className="mono">{n}</dd>
               </div>
             ))}
@@ -119,7 +121,9 @@ export function Server() {
 
       <section className="stack" aria-labelledby="set-h">
         <h2 id="set-h">The anonymity set</h2>
-        {key ? (
+        {key && key.issued === 0 ? (
+          <p className="muted">No tokens issued under the current key yet. The first pack bought makes a set of 100.</p>
+        ) : key ? (
           <>
             <p>
               A token hides among every token issued under the same key: <span className="mono">{key.issued}</span> from <span className="mono">{key.packs}</span>{' '}

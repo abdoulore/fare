@@ -12,7 +12,7 @@ export interface StepView {
   detail: string;
 }
 
-export const STEPS = ['pending', 'in mempool', 'confirming 0 of 1', 'paid'] as const;
+export const STEPS = ['pending', 'mempool', 'confirming', 'paid'] as const;
 
 export function viewStatus(status: string): StepView {
   switch (status) {

@@ -71,7 +71,7 @@ test('hosted: demo payer buys a pack, 3 calls, replay refused', async ({ page, r
   await shot(page, '05-tokens');
 
   for (const [i, q] of ['What does a shielded Zcash payment hide?', 'In one sentence, what is a blind signature?', 'Why does single use matter for a token?'].entries()) {
-    await page.getByLabel('Question').fill(q);
+    await page.locator('#prompt-use').fill(q);
     await page.getByRole('button', { name: 'Ask with one token' }).click();
     await expect(page.getByTestId('tokens-left')).toHaveText(String(99 - i));
     await expect(page.getByTestId('answers').locator('li')).toHaveCount(i + 1, { timeout: 120_000 });

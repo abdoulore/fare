@@ -9,7 +9,13 @@ export function Landing() {
     <>
       <section className="hero">
         <h1>Pay once in shielded ZEC. Every call after that carries a token nobody can link back to you, including us.</h1>
-        <p className="lede">Fare sells an API in packs of 100 calls. Your browser makes the tokens; the server signs them blind, then checks each one once.</p>
+        <p className="lede">
+          Fare sells an API in packs of 100 calls, paid in testnet ZEC (TAZ, no value). Your browser makes the tokens; the server signs them blind, then checks each one
+          once.
+        </p>
+        <p className="muted">
+          What it does not hide: your IP and timing, a small anonymity set, and what you ask. <Link to="/how">Read the limits</Link>
+        </p>
         <div className="row">
           <Link to="/try" className="button primary">
             Try it on testnet
