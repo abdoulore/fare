@@ -29,7 +29,7 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 - **Research before asking** when a fact can be verified (crate source, RFCs, official docs).
 - **Writing:** direct, short, factual, no speculative claims. Label anything simulated as simulated, in the UI and in the README.
 
-## Status (Oct 24)
+## Status (Oct 25)
 
 | Part | State |
 | --- | --- |
@@ -39,7 +39,7 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 | `issuer/` (TypeScript) | Built Oct 24. 19 tests green, typecheck clean. Native signing, 7-day epoch keys. |
 | `sdk/` (TypeScript) | Built Oct 24. 12 tests green against the real issuer with a stub scanner. Follows key rotation through the directory (Oct 25). |
 | `origin/` (TypeScript) | Built Oct 25. 11 tests green, end to end with the real issuer and SDK. |
-| `demo/` (TypeScript) | Built Oct 25. LLM proxy behind the origin (simulated without a model key), agent paying with `fare-wallet`, loopback panel. 9 tests. Not yet run on testnet. |
+| `demo/` (TypeScript) | Built Oct 25. LLM proxy behind the origin, agent paying with `fare-wallet`, loopback panel. 9 tests. Whole stack run on testnet ([run](https://github.com/abdoulore/fare/actions/runs/40096150452)): the agent hit a 402, paid 0.001 TAZ in tx `2e97c74b44bce98c4b6707928c78df62e6b630b042146b824dea833b964ae5b8`, got 100 tokens once it confirmed, made 5 calls (answers simulated: no model key secret), and a replayed token got `401 token_reused`. Panel: 1 paid purchase, 100 tokens issued, 6 redeemed, 1 refused, "one of 100 tokens from 1 purchase". |
 
 ## Gates
 
