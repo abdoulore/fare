@@ -26,7 +26,7 @@ npx playwright test           # builds, starts e2e/stack.ts, runs 22 browser tes
 npm run dev                   # http://127.0.0.1:5173 against local services
 ```
 
-`npm run dev` and `npm run build` read `VITE_API_URL`, `VITE_ISSUER_URL`, `VITE_PAYER_URL` (defaults: `127.0.0.1` ports 8080, 8787, 8791) and optionally `VITE_EXPLORER_TX`, a prefix txids are appended to for explorer links. Start the issuer with `WEB_ORIGINS=http://127.0.0.1:5173`, and the demo API and payer likewise, or the browser cannot read their responses.
+`npm run dev` and `npm run build` read `VITE_API_URL`, `VITE_ISSUER_URL`, `VITE_PAYER_URL` (defaults: `127.0.0.1` ports 8080, 8787, 8791) and optionally `VITE_EXPLORER_TX`, a prefix txids are appended to for explorer links (default `https://testnet.zecblock.com/tx/`). Start the issuer with `WEB_ORIGINS=http://127.0.0.1:5173`, and the demo API and payer likewise, or the browser cannot read their responses.
 
 `e2e/stack.ts` runs the real issuer, origin, demo API and demo payer with a stub scanner and a stub wallet: a full payment walks a purchase through in_mempool and confirming to paid, a half payment to underpaid. Nothing there touches the chain.
 

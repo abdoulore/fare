@@ -44,7 +44,8 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_API_URL': JSON.stringify(env.VITE_API_URL),
       'import.meta.env.VITE_ISSUER_URL': JSON.stringify(env.VITE_ISSUER_URL),
       'import.meta.env.VITE_PAYER_URL': JSON.stringify(env.VITE_PAYER_URL),
-      'import.meta.env.VITE_EXPLORER_TX': JSON.stringify(env.VITE_EXPLORER_TX ?? ''),
+      // A public testnet explorer that shows Ironwood transactions; override with VITE_EXPLORER_TX.
+      'import.meta.env.VITE_EXPLORER_TX': JSON.stringify(env.VITE_EXPLORER_TX || 'https://testnet.zecblock.com/tx/'),
     },
     resolve: {
       // sdk/src/core.ts lives outside this package; give it this package's copy.

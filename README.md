@@ -26,17 +26,17 @@ uivktest160nugcs8fnvmx98nuqy982yadezp0uk8h8chq47uq74q3rqgynurv0tfc77vvsmn38f6nn2
 
 It reveals incoming payments to this demo account only: amount, height, address index. It cannot spend, and it reveals nothing about tokens or API calls.
 
-| Index | Amount (TAZ) | Height | Txid | What it shows | Run |
-| --- | --- | --- | --- | --- | --- |
-| +0 | 0.001 | 4,535,557 | `fd1e9ee3f90c0e3bd8bf874e86352ab8fb085158190c5242a27e0afa623af9d9` | Canary: paid, matched by index | [canary](https://github.com/abdoulore/fare/actions/runs/40084407257) |
-| +1 | 0.0005 | 4,535,562 | `0346de58cdaa73d7285e7e91448effa2c437978b44cfdf1bc72a4cf9b866652b` | Canary: underpaid, stays underpaid | [canary](https://github.com/abdoulore/fare/actions/runs/40084407257) |
-| +2 | 0.001 | 4,535,836 | `9a6e1bf355929f15ccf13035d00c8e6dea01e56145d6ea4dbb068d71bdb24740` | Minted over HTTP by `serve`: pending, in mempool, paid | [serve](https://github.com/abdoulore/fare/actions/runs/40091932215) |
-| +3 | 0.001 | 4,535,984 | `2e97c74b44bce98c4b6707928c78df62e6b630b042146b824dea833b964ae5b8` | Whole stack: 402, pay, 100 tokens, 5 calls, replay refused | [demo](https://github.com/abdoulore/fare/actions/runs/40096150452) |
-| +4 | 0.001 | 4,536,048 | `b01a1fc002e2ff71a6b8438b5f403eda48bdd948a9936b0f01d6e819dc7fa4df` | Paid: 100 tokens, a call succeeds | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) |
-| +5 | 0.0005 | 4,536,052 | `0c3e538be90d9a5bfa60463314a6cd2dd06a092a62486c8dd0f9f39a7a26058d` | Underpaid: no signatures issued | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) |
-| +6 | 0.001 | 4,536,054 | `60d3f691c7b71deb4f7eb890f3e2967971c78ced8cf287d62b1d271c7b30ebf3` | Second payment, first of two | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) |
-| +6 | 0.001 | 4,536,061 | `d3529ffb9e1cedcc2cdc0bdb3216de385a0e255db60912ef31d6b700532ba652` | Second payment: still exactly 100 tokens | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) |
-| +7 | 0.001 | 4,536,656 | `5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0` | Hosted site, in a browser: demo payer paid, 100 tokens unblinded in the page, 3 calls, replay refused | [hosted run](docs/hosted/) |
+| Index | Amount (TAZ) | Height | Txid | What it shows | Run | On chain |
+| --- | --- | --- | --- | --- | --- | --- |
+| +0 | 0.001 | 4,535,557 | `fd1e9ee3f90c0e3bd8bf874e86352ab8fb085158190c5242a27e0afa623af9d9` | Canary: paid, matched by index | [canary](https://github.com/abdoulore/fare/actions/runs/40084407257) | [explorer](https://testnet.zecblock.com/tx/fd1e9ee3f90c0e3bd8bf874e86352ab8fb085158190c5242a27e0afa623af9d9), [screenshot](docs/explorer/0-canary-paid.png) |
+| +1 | 0.0005 | 4,535,562 | `0346de58cdaa73d7285e7e91448effa2c437978b44cfdf1bc72a4cf9b866652b` | Canary: underpaid, stays underpaid | [canary](https://github.com/abdoulore/fare/actions/runs/40084407257) | [explorer](https://testnet.zecblock.com/tx/0346de58cdaa73d7285e7e91448effa2c437978b44cfdf1bc72a4cf9b866652b), [screenshot](docs/explorer/1-canary-underpaid.png) |
+| +2 | 0.001 | 4,535,836 | `9a6e1bf355929f15ccf13035d00c8e6dea01e56145d6ea4dbb068d71bdb24740` | Minted over HTTP by `serve`: pending, in mempool, paid | [serve](https://github.com/abdoulore/fare/actions/runs/40091932215) | [explorer](https://testnet.zecblock.com/tx/9a6e1bf355929f15ccf13035d00c8e6dea01e56145d6ea4dbb068d71bdb24740), [screenshot](docs/explorer/2-serve.png) |
+| +3 | 0.001 | 4,535,984 | `2e97c74b44bce98c4b6707928c78df62e6b630b042146b824dea833b964ae5b8` | Whole stack: 402, pay, 100 tokens, 5 calls, replay refused | [demo](https://github.com/abdoulore/fare/actions/runs/40096150452) | [explorer](https://testnet.zecblock.com/tx/2e97c74b44bce98c4b6707928c78df62e6b630b042146b824dea833b964ae5b8), [screenshot](docs/explorer/3-demo.png) |
+| +4 | 0.001 | 4,536,048 | `b01a1fc002e2ff71a6b8438b5f403eda48bdd948a9936b0f01d6e819dc7fa4df` | Paid: 100 tokens, a call succeeds | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) | [explorer](https://testnet.zecblock.com/tx/b01a1fc002e2ff71a6b8438b5f403eda48bdd948a9936b0f01d6e819dc7fa4df), [screenshot](docs/explorer/4-paid.png) |
+| +5 | 0.0005 | 4,536,052 | `0c3e538be90d9a5bfa60463314a6cd2dd06a092a62486c8dd0f9f39a7a26058d` | Underpaid: no signatures issued | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) | [explorer](https://testnet.zecblock.com/tx/0c3e538be90d9a5bfa60463314a6cd2dd06a092a62486c8dd0f9f39a7a26058d), [screenshot](docs/explorer/5-underpaid.png) |
+| +6 | 0.001 | 4,536,054 | `60d3f691c7b71deb4f7eb890f3e2967971c78ced8cf287d62b1d271c7b30ebf3` | Second payment, first of two | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) | [explorer](https://testnet.zecblock.com/tx/60d3f691c7b71deb4f7eb890f3e2967971c78ced8cf287d62b1d271c7b30ebf3), [screenshot](docs/explorer/6a-second.png) |
+| +6 | 0.001 | 4,536,061 | `d3529ffb9e1cedcc2cdc0bdb3216de385a0e255db60912ef31d6b700532ba652` | Second payment: still exactly 100 tokens | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) | [explorer](https://testnet.zecblock.com/tx/d3529ffb9e1cedcc2cdc0bdb3216de385a0e255db60912ef31d6b700532ba652), [screenshot](docs/explorer/6b-second.png) |
+| +7 | 0.001 | 4,536,656 | `5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0` | Hosted site, in a browser: demo payer paid, 100 tokens unblinded in the page, 3 calls, replay refused | [hosted run](docs/hosted/) | [explorer](https://testnet.zecblock.com/tx/5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0), [screenshot](docs/explorer/7-hosted.png) |
 
 ### The hosted run
 
@@ -55,7 +55,13 @@ cd scanner && cargo build --release
 
 `init --uivk` makes a watch-only verifier: it holds no seed and refuses to mint. `status` lists every payment to the key by purchase index, with amount, height and txid. The [failure-paths run](https://github.com/abdoulore/fare/actions/runs/40098320054) does exactly this on a fresh runner and lists +4, +5 and +6 as above.
 
-The scan needs a machine that can reach `testnet.zec.rocks`. Block explorer screenshots of these transactions are still to be added.
+The scan needs a machine that can reach `testnet.zec.rocks`.
+
+### What a chain observer sees
+
+The same transactions on a public testnet explorer ([ZecBlock](https://testnet.zecblock.com), screenshots in [`docs/explorer/`](docs/explorer/)): each is an Ironwood transaction with 2 actions, a fee of 0.0001 TAZ as the only value leaving the pool, and no sender, recipient, amount or memo. All nine are 9,166 bytes. A paid purchase, an underpaid one and a second payment look the same; only the published viewing key tells them apart.
+
+![The underpaid purchase (+5) on a testnet explorer: block, fee, size and 2 Ironwood actions, nothing else](docs/explorer/5-underpaid.png)
 
 ## What is real
 
@@ -70,7 +76,7 @@ The scan needs a machine that can reach `testnet.zec.rocks`. Block explorer scre
 | Frontend (`web/`) | Real: tokens are blinded, unblinded and stored in the visitor's browser. Its end-to-end tests run against a stub scanner and a stub wallet, labeled as such in `web/e2e/stack.ts` |
 | Demo payer | When used, a real testnet payment from Fare's own `fare-wallet`, not the visitor's. The page says so on every payment |
 | Hosting | https://fare.moonrider.online: one VPS behind Caddy, set up with `deploy/` (owner decision D2). Answers there are simulated until the host has a model key |
-| Explorer screenshots | Not yet added |
+| Explorer screenshots | Real: every proof txid on a public testnet explorer, in `docs/explorer/` |
 
 ## Threat model
 

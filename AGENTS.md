@@ -248,7 +248,7 @@ From the spec. Keep these shapes.
 
 **Oct 27: proof and polish.** README with a real-versus-mocked table, threat model and residuals (done Oct 27). CI runs every package: scanner, wallet, issuer, sdk, origin, demo, token canaries.
 
-**Oct 24 (added): frontend.** `web/` with the buyer flow and the public pages, CORS and public id-free views on the services, the demo payer, `deploy/` for one VPS. Deployed at https://fare.moonrider.online and the paid hosted run done (Oct 24). Remaining: testnet explorer screenshots.
+**Oct 24 (added): frontend.** `web/` with the buyer flow and the public pages, CORS and public id-free views on the services, the demo payer, `deploy/` for one VPS. Deployed at https://fare.moonrider.online, the paid hosted run done, and explorer screenshots of every proof txid in `docs/explorer/` (ZecBlock, which CipherScan's testnet explorer forwards to; zcashexplorer.app's testnet site lists none of the Ironwood txs) (Oct 24).
 
 **Oct 28: ship.** Demo video, submission text, repo public.
 
