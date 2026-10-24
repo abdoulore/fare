@@ -33,7 +33,7 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 
 | Part | State |
 | --- | --- |
-| `scanner/` (Rust) | Built. 29 tests green, clippy clean. `serve` added Oct 24; testnet proof pending. |
+| `scanner/` (Rust) | Built. 29 tests green, clippy clean. `serve` proven on testnet Oct 24 ([run](https://github.com/abdoulore/fare/actions/runs/40091932215)): a purchase minted over HTTP went pending, in_mempool, paid after `fare-wallet` paid it in tx `9a6e1bf355929f15ccf13035d00c8e6dea01e56145d6ea4dbb068d71bdb24740` (height 4,535,836). |
 | `wallet/` (Rust) | Built Oct 24. 26 tests green, clippy clean. Paid both canary purchases on testnet. |
 | `token-canary/` (Node) | Passed 11 of 11 checks with 100 tokens. Native signing measured. |
 | `issuer/` (TypeScript) | Built Oct 24. 19 tests green, typecheck clean. Native signing, 7-day epoch keys. |

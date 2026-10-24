@@ -38,6 +38,7 @@ curl localhost:7077/purchases/<purchase_id>
 - `GET /purchases/{id}` gives `status` (`pending`, `in_mempool`, `confirming`, `paid`, `underpaid`), `received_zat`, `payments`, `leaky_funding`.
 - The follow loop scans from the saved cursor every `--interval` seconds, rescanning the last `--reorg-depth` blocks. Payments in that window are forgotten and re-recorded, so one a reorg removed disappears instead of lingering.
 - It logs heights and counts only: no request data, no purchase ids.
+- Proven on testnet Oct 24 (`.github/workflows/testnet-serve.yml`, [run](https://github.com/abdoulore/fare/actions/runs/40091932215)): a purchase minted over HTTP went `pending`, `in_mempool`, `paid` within 30 s of `fare-wallet` paying it in tx `9a6e1bf355929f15ccf13035d00c8e6dea01e56145d6ea4dbb068d71bdb24740`.
 
 ## Canary (testnet)
 
