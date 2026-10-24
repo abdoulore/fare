@@ -136,6 +136,11 @@ jobs:
         working-directory: web
       - run: npx playwright test
         working-directory: web
+      # Dev-time design check (impeccable, telemetry off); never shipped to buyers.
+      - run: npm run design:check
+        working-directory: web
+        env:
+          IMPECCABLE_NO_TELEMETRY: '1'
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
