@@ -59,6 +59,8 @@ function build(epoch: number, priv: KeyObject, tokenKey: Uint8Array): EpochKey {
 export class KeyRing {
   private readonly dir: string;
   private readonly keys = new Map<number, EpochKey>();
+  /** One key generation in flight per epoch: concurrent first requests share it. */
+  private readonly pending = new Map<number, Promise<EpochKey>>();
 
   constructor(dataDir: string) {
     this.dir = join(dataDir, 'keys');
@@ -102,7 +104,16 @@ export class KeyRing {
   /** The current epoch's key, created on first use. */
   async current(nowSec: number): Promise<EpochKey> {
     const epoch = epochOf(nowSec);
-    return this.load(epoch) ?? (await this.generate(epoch));
+    const loaded = this.load(epoch);
+    if (loaded) return loaded;
+    // Without this, two requests at the start of an epoch each generate a key and the
+    // second overwrites the first, so clients that saw the first are refused.
+    let inFlight = this.pending.get(epoch);
+    if (!inFlight) {
+      inFlight = this.generate(epoch).finally(() => this.pending.delete(epoch));
+      this.pending.set(epoch, inFlight);
+    }
+    return inFlight;
   }
 
   /** Keys clients may hold right now: the current one, plus the previous one during grace. */

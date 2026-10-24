@@ -22,6 +22,16 @@ test('one key per 7-day epoch, persisted and reloaded unchanged', async () => {
   assert.equal(epochOf(epochStart(3001)), 3001);
 });
 
+test('concurrent first requests in an epoch get one key, not two', async () => {
+  const dir = tempDir();
+  const ring = new KeyRing(dir);
+  const t = epochStart(4000) + 60;
+  const keys = await Promise.all([ring.current(t), ring.current(t), ring.live(t), ring.current(t)]);
+  const ids = new Set(keys.map((k) => hex(Array.isArray(k) ? k[0].keyId : k.keyId)));
+  assert.equal(ids.size, 1, 'every caller sees the same key');
+  assert.equal(hex((await new KeyRing(dir).current(t)).keyId), [...ids][0], 'and it is the one on disk');
+});
+
 test('rotation keeps the previous key for a 24 h grace window, then drops it', async () => {
   const ring = new KeyRing(tempDir());
   const old = await ring.current(epochStart(5000) + 10);
