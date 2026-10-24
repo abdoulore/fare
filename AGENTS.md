@@ -29,17 +29,19 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 - **Research before asking** when a fact can be verified (crate source, RFCs, official docs).
 - **Writing:** direct, short, factual, no speculative claims. Label anything simulated as simulated, in the UI and in the README.
 
-## Status (Oct 25)
+## Status (Oct 26)
 
 | Part | State |
 | --- | --- |
-| `scanner/` (Rust) | Built. 29 tests green, clippy clean. `serve` proven on testnet Oct 24 ([run](https://github.com/abdoulore/fare/actions/runs/40091932215)): a purchase minted over HTTP went pending, in_mempool, paid after `fare-wallet` paid it in tx `9a6e1bf355929f15ccf13035d00c8e6dea01e56145d6ea4dbb068d71bdb24740` (height 4,535,836). |
+| `scanner/` (Rust) | Built. 33 tests green, clippy clean. Watch-only verifier (`init --uivk`) added Oct 26. `serve` proven on testnet Oct 24 ([run](https://github.com/abdoulore/fare/actions/runs/40091932215)): a purchase minted over HTTP went pending, in_mempool, paid after `fare-wallet` paid it in tx `9a6e1bf355929f15ccf13035d00c8e6dea01e56145d6ea4dbb068d71bdb24740` (height 4,535,836). |
 | `wallet/` (Rust) | Built Oct 24. 26 tests green, clippy clean. Paid both canary purchases on testnet. |
 | `token-canary/` (Node) | Passed 11 of 11 checks with 100 tokens. Native signing measured. |
 | `issuer/` (TypeScript) | Built Oct 24. 19 tests green, typecheck clean. Native signing, 7-day epoch keys. |
 | `sdk/` (TypeScript) | Built Oct 24. 12 tests green against the real issuer with a stub scanner. Follows key rotation through the directory (Oct 25). |
 | `origin/` (TypeScript) | Built Oct 25. 11 tests green, end to end with the real issuer and SDK. |
 | `demo/` (TypeScript) | Built Oct 25. LLM proxy behind the origin, agent paying with `fare-wallet`, loopback panel. 9 tests. Whole stack run on testnet ([run](https://github.com/abdoulore/fare/actions/runs/40096150452)): the agent hit a 402, paid 0.001 TAZ in tx `2e97c74b44bce98c4b6707928c78df62e6b630b042146b824dea833b964ae5b8`, got 100 tokens once it confirmed, made 5 calls (answers simulated: no model key secret), and a replayed token got `401 token_reused`. Panel: 1 paid purchase, 100 tokens issued, 6 redeemed, 1 refused, "one of 100 tokens from 1 purchase". |
+| Failure paths, testnet | Oct 26 ([run](https://github.com/abdoulore/fare/actions/runs/40098320054)): paid (+4, tx `b01a1fc0...a4df`, 100 tokens, a call served), underpaid (+5, tx `0c3e538b...058d`, no signatures), paid twice (+6, txs `60d3f691...ebf3` and `d3529ffb...a652`, 200000 zat recorded, still exactly 100 tokens). A watch-only verifier set up from the published incoming viewing key alone listed all four payments by index. Every SPEC failure-path row names its proving test. |
+| Demo viewing key | Published in README (owner approved Oct 26). |
 
 ## Gates
 

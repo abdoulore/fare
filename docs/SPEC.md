@@ -86,8 +86,8 @@ Every row below is either a test that runs in CI or a step in the demo video, so
 
 | Case | Expected behavior | Proven by |
 | --- | --- | --- |
-| Underpayment | Purchase stays `underpaid`, shortfall shown, no tokens | Scanner `attributes_every_case_from_compact_blocks_alone` and `tests/check.rs`; issuer `no signatures until the scanner says paid`; testnet canary run 4 and the failure-paths run |
-| Overpayment or a second payment | `paid`, extra recorded, still exactly N tokens | Scanner `mempool_then_confirmation_then_overpayment`; testnet failure-paths run (`second`) |
+| Underpayment | Purchase stays `underpaid`, shortfall shown, no tokens | Scanner `attributes_every_case_from_compact_blocks_alone` and `tests/check.rs`; issuer `no signatures until the scanner says paid`; testnet canary run 4 (+1) and the [failure-paths run](https://github.com/abdoulore/fare/actions/runs/40098320054) (+5, tx `0c3e538b...058d`) |
+| Overpayment or a second payment | `paid`, extra recorded, still exactly N tokens | Scanner `mempool_then_confirmation_then_overpayment`; [failure-paths run](https://github.com/abdoulore/fare/actions/runs/40098320054) (+6, two payments, 100 tokens) |
 | Payment seen only in mempool | `in mempool`, no tokens until 1 confirmation | Scanner `mempool_then_confirmation_then_overpayment`, serve `status_follows_the_chain`; issuer `no signatures until the scanner says paid`; testnet serve run (pending, in_mempool, paid) |
 | Payment to a non-purchase address of the same key | Counted as unattributed, never issues tokens | Scanner `attributes_every_case_from_compact_blocks_alone` (wallet's own address) |
 | Payment to a different key | Not detected at all | Scanner `attributes_every_case_from_compact_blocks_alone` (foreign key) |
@@ -145,21 +145,21 @@ One gate, five build days, submission with a buffer: nothing after the canary st
 
 **Oct 24: issuance**
 
-- [ ] `fare-scanner serve`: mint and status over localhost HTTP for the issuer
-- [ ] Issuer: `POST /fare/purchases`, `GET /fare/purchases/{id}`, epoch RSA key, issuer directory at the well-known URL
-- [ ] Client SDK: blind, order, poll, finalize, pin key
+- [x] `fare-scanner serve`: mint and status over localhost HTTP for the issuer
+- [x] Issuer: `POST /fare/purchases`, `GET /fare/purchases/{id}`, epoch RSA key, issuer directory at the well-known URL
+- [x] Client SDK: blind, order, poll, finalize, pin key
 
 **Oct 25: redemption**
 
-- [ ] Origin middleware: 402 challenge, verify, spent-nonce store
-- [ ] Demo API (LLM or search proxy) and an agent that calls it in a loop
-- [ ] Server-view panel: purchases, redemptions, anonymity-set size
+- [x] Origin middleware: 402 challenge, verify, spent-nonce store
+- [x] Demo API (LLM or search proxy) and an agent that calls it in a loop
+- [x] Server-view panel: purchases, redemptions, anonymity-set size
 
-**Oct 26: failure paths and testnet run**
+**Oct 26: failure paths and testnet run (done)**
 
-- [ ] Origin and SDK tests: reuse, forged, retired epoch, unpinned key
-- [ ] Scanner follow mode with a cursor and a reorg rescan window
-- [ ] Testnet run: paid, underpaid and second-payment purchases with real txids, paid by `fare-wallet`; publish the demo viewing key
+- [x] Origin and SDK tests: reuse, forged, retired epoch, unpinned key
+- [x] Scanner follow mode with a cursor and a reorg rescan window
+- [x] Testnet run: paid, underpaid and second-payment purchases with real txids, paid by `fare-wallet` ([run](https://github.com/abdoulore/fare/actions/runs/40098320054)); demo viewing key published in README
 
 **Oct 27: proof and polish**
 
