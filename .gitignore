@@ -8,3 +8,5 @@ node_modules/
 fare-wallet-data/
 **/fare-wallet-data/
 *.sqlite
+issuer-data/
+**/issuer-data/

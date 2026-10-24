@@ -40,6 +40,22 @@ jobs:
       - run: cargo test --locked
       - run: cargo clippy --all-targets --locked -- -D warnings
 
+  issuer:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: issuer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: issuer/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
   token-canary:
     runs-on: ubuntu-latest
     defaults:

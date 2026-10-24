@@ -1,0 +1,20 @@
+{
+  "name": "fare-issuer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fare issuer: sells a fixed pack of Privacy Pass tokens for one shielded payment.",
+  "type": "module",
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "start": "node src/main.ts",
+    "test": "node --test --test-reporter=spec test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cloudflare/privacypass-ts": "0.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "typescript": "7.0.2"
+  }
+}
