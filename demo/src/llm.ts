@@ -86,3 +86,14 @@ export function responderFromEnv(env: NodeJS.ProcessEnv = process.env): Responde
   }
   return cannedResponder();
 }
+
+/**
+ * Test stacks only: fails like an unreachable model whenever the prompt contains
+ * `marker`, so the end-to-end test can show a token spent on a failed answer.
+ */
+export function failingOn(marker: string, inner: Responder): Responder {
+  return async (prompt) => {
+    if (prompt.includes(marker)) throw new UpstreamError(502, 'model unreachable');
+    return inner(prompt);
+  };
+}

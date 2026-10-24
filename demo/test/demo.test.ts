@@ -6,9 +6,9 @@ import { after, before, test } from 'node:test';
 
 import { createOrigin } from '../../origin/src/index.ts';
 import { FareClient } from '../../sdk/src/index.ts';
-import { startIssuer, stubScanner, tempDir, type StubScanner, type TestIssuer } from '../../issuer/test/helpers.ts';
+import { startIssuer, stubScanner, tempDir, WEB_ORIGIN, type StubScanner, type TestIssuer } from '../../issuer/test/helpers.ts';
 import { PACK } from '../../issuer/src/config.ts';
-import { cannedResponder, claudeResponder, responderFromEnv, UpstreamError, type MessagesClient, type Responder } from '../src/llm.ts';
+import { cannedResponder, claudeResponder, failingOn, responderFromEnv, UpstreamError, type MessagesClient, type Responder } from '../src/llm.ts';
 import { createPanel, panelStats, PANEL_PAGE } from '../src/panel.ts';
 import { createApi, parseAsk } from '../src/server.ts';
 
@@ -25,7 +25,7 @@ async function serve(handler: RequestListener) {
 
 async function stack(responder: Responder = cannedResponder()) {
   const origin = createOrigin({ originName: 'api.fare.test', issuerName: 'issuer.fare.test', issuerUrl: issuer.url, pack: PACK, priceZec: '0.001', dataDir: tempDir() });
-  const api = await serve(createApi({ origin, responder, simulated: true, pack: PACK, priceZec: '0.001' }));
+  const api = await serve(createApi({ origin, responder, simulated: true, pack: PACK, priceZec: '0.001', webOrigins: [WEB_ORIGIN] }));
   const panel = await serve(createPanel({ origin, issuerDataDir, scannerUrl: scanner.url, pack: PACK, simulated: true }));
   const sdk = new FareClient({ issuerUrl: issuer.url, stateFile: join(tempDir(), 'agent.json'), pollMs: 10, timeoutMs: 2_000 });
   await sdk.pin();
@@ -179,6 +179,54 @@ test('panel: both sides, no join key, the anonymity set, nothing external', asyn
   } finally {
     await s.close();
   }
+});
+
+test('a browser on the web origin can read the 402, stats and health; others cannot', async () => {
+  const s = await stack();
+  try {
+    const res = await fetch(s.ask, { method: 'POST', headers: { origin: WEB_ORIGIN } });
+    assert.equal(res.status, 402);
+    assert.equal(res.headers.get('access-control-allow-origin'), WEB_ORIGIN);
+    assert.match(res.headers.get('access-control-expose-headers') ?? '', /WWW-Authenticate, Fare-Offer, Retry-After/);
+    const other = await fetch(s.ask, { method: 'POST', headers: { origin: 'https://evil.example' } });
+    assert.equal(other.headers.get('access-control-allow-origin'), null);
+
+    const pre = await fetch(s.ask, {
+      method: 'OPTIONS',
+      headers: { origin: WEB_ORIGIN, 'access-control-request-method': 'POST', 'access-control-request-headers': 'authorization, content-type' },
+    });
+    assert.equal(pre.status, 204);
+    assert.match(pre.headers.get('access-control-allow-headers') ?? '', /authorization/);
+
+    // One redemption and one refusal, then the public counts.
+    const challenge = await s.sdk.acceptChallenge(res.headers.get('www-authenticate'));
+    await payer();
+    const purchase = await s.sdk.order(challenge, { pack: PACK, price_zec: '0.001', issuer: issuer.url });
+    await payer();
+    await s.sdk.collect(purchase);
+    const auth = s.sdk.spend(challenge)!;
+    assert.equal((await fetch(s.ask, { ...post('one'), headers: { authorization: auth, 'content-type': 'application/json' } })).status, 200);
+    assert.equal((await fetch(s.ask, { ...post('two'), headers: { authorization: auth, 'content-type': 'application/json' } })).status, 401);
+    const stats = await (await fetch(`${s.api.url}/v1/stats`)).json();
+    assert.deepEqual(Object.keys(stats).sort(), ['challenged', 'redeemed', 'refused', 'spent_by_key']);
+    assert.equal(stats.redeemed, 1);
+    assert.equal(stats.refused.token_reused, 1);
+    assert.deepEqual(Object.values(stats.spent_by_key), [1]);
+    assert.ok(!JSON.stringify(stats).includes(purchase.purchase_id));
+
+    const health = await (await fetch(`${s.api.url}/health`)).json();
+    assert.equal(health.model, 'simulated');
+    assert.match(health.key_id, /^[0-9a-f]{64}$/);
+    assert.ok(health.key_id.startsWith(Object.keys(stats.spent_by_key)[0]));
+  } finally {
+    await s.close();
+  }
+});
+
+test('failingOn fails only prompts carrying the marker', async () => {
+  const r = failingOn('#fail', cannedResponder());
+  assert.equal((await r('fine')).simulated, true);
+  await assert.rejects(r('please #fail'), UpstreamError);
 });
 
 test('demo sources log no request data', async () => {

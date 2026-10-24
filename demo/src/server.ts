@@ -2,6 +2,10 @@
 //
 //   POST /v1/ask {prompt}   402 without a token; one token per answer.
 //   GET  /                  what this API is and what it costs.
+//   GET  /v1/stats          redemption counts: per key, and refusals by reason. Counts only.
+//   GET  /health            whether answers are real or simulated, and the current key id.
+//
+// CORS: origins in `webOrigins` may call it from a browser and read the 402's headers.
 //
 // The body is validated before the token is redeemed, so a malformed request costs
 // nothing. A model failure after redemption does cost the token: it cannot be unspent
@@ -9,6 +13,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
+import { cors } from '../../issuer/src/cors.ts';
 import type { createOrigin } from '../../origin/src/index.ts';
 import { MAX_PROMPT_CHARS, UpstreamError, type Responder } from './llm.ts';
 
@@ -56,12 +61,25 @@ export interface ApiOptions {
   simulated: boolean;
   pack: number;
   priceZec: string;
+  webOrigins?: readonly string[];
 }
 
 export function createApi(opts: ApiOptions) {
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     const path = (req.url ?? '/').split('?')[0];
     try {
+      if (cors(req, res, opts.webOrigins ?? [])) return;
+      if (path === '/v1/stats' && req.method === 'GET') {
+        const st = opts.origin.stats();
+        send(res, 200, { redeemed: st.redeemed, challenged: st.challenged, refused: st.refused, spent_by_key: st.spentByKey });
+        return;
+      }
+      if (path === '/health' && req.method === 'GET') {
+        await opts.origin.refresh().catch(() => undefined);
+        const key = opts.origin.currentKeyId();
+        send(res, 200, { ok: key !== undefined, model: opts.simulated ? 'simulated' : 'real', key_id: key ?? null });
+        return;
+      }
       if (path === '/' && req.method === 'GET') {
         send(res, 200, {
           service: 'Fare demo LLM proxy',

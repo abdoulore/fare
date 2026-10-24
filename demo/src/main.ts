@@ -9,13 +9,16 @@
 //   ISSUER_DATA    the issuer's data dir, read by the panel (default ../issuer/issuer-data)
 //   SCANNER_URL    scanner sidecar, read by the panel (default http://127.0.0.1:7077)
 //   ANTHROPIC_API_KEY / FARE_MODEL   real model answers; without a key, answers are simulated
+//   WEB_ORIGINS    browser origins allowed by CORS, comma-separated (default none)
+//   FARE_TEST_FAIL_MARKER   test stacks only: a prompt containing it fails as a model outage
 
 import { createServer } from 'node:http';
 import { isIP } from 'node:net';
 
 import { createOrigin } from '../../origin/src/index.ts';
 import { PACK, PRICE_ZAT } from '../../issuer/src/config.ts';
-import { responderFromEnv } from './llm.ts';
+import { parseOrigins } from '../../issuer/src/cors.ts';
+import { failingOn, responderFromEnv } from './llm.ts';
 import { createPanel } from './panel.ts';
 import { createApi } from './server.ts';
 
@@ -47,7 +50,9 @@ if (!(panelHost === 'localhost' || (isIP(panelHost) && (panelHost.startsWith('12
   process.exit(1);
 }
 
-createServer(createApi({ origin, responder: responderFromEnv(env), simulated, pack: PACK, priceZec })).listen(apiPort, apiHost, () => {
+const responder = env.FARE_TEST_FAIL_MARKER ? failingOn(env.FARE_TEST_FAIL_MARKER, responderFromEnv(env)) : responderFromEnv(env);
+const webOrigins = parseOrigins(env.WEB_ORIGINS);
+createServer(createApi({ origin, responder, simulated, pack: PACK, priceZec, webOrigins })).listen(apiPort, apiHost, () => {
   console.log(`demo API on http://${apiHost}:${apiPort}${simulated ? ' (answers SIMULATED: no model API key)' : ''}`);
 });
 createServer(

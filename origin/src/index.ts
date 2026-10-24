@@ -186,6 +186,9 @@ export function createOrigin(opts: OriginOptions) {
     return { ...stats, refused: { ...stats.refused }, spentByKey };
   }
 
-  return { protect, redeem, challengeHeaders, refresh, stats: snapshot, challengeDigest };
+  /** The key id new challenges use, once the directory has been read. */
+  const currentKeyId = (): string | undefined => live[0]?.keyId;
+
+  return { protect, redeem, challengeHeaders, refresh, stats: snapshot, challengeDigest, currentKeyId };
 }
 
