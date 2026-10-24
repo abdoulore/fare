@@ -9,9 +9,8 @@ on:
   workflow_dispatch:
     inputs:
       from:
-        description: "Scan from this height (leave empty to only print the current tip)"
-        required: false
-        default: ""
+        description: "Scan from this height: a block below the first payment"
+        required: true
 
 permissions:
   contents: read
@@ -43,9 +42,7 @@ jobs:
         env:
           FROM: ${{ inputs.from }}
         run: |
-          if [ -n "$FROM" ]; then
-            case "$FROM" in *[!0-9]*) echo "from must be a block height"; exit 1;; esac
-            ./target/release/fare-scanner scan --mempool --check-transparent --from "$FROM"
-          else
-            ./target/release/fare-scanner scan --mempool --check-transparent
-          fi
+          case "$FROM" in ''|*[!0-9]*) echo "from must be a block height"; exit 1;; esac
+          ./target/release/fare-scanner scan --mempool --check-transparent --from "$FROM"
+      - name: Check
+        run: ./target/release/fare-scanner check --paid canary --underpaid underpay

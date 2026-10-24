@@ -26,7 +26,7 @@ enum Cmd {
     Init {
         #[arg(long, default_value = "main")]
         network: String,
-        /// lightwalletd URL. Defaults to CipherScan's public server for the network.
+        /// lightwalletd URL. Defaults to testnet.zec.rocks on testnet, CipherScan on mainnet.
         #[arg(long)]
         server: Option<String>,
         /// Use an existing unified full viewing key instead of generating a seed.
@@ -61,6 +61,16 @@ enum Cmd {
     },
     /// Show purchases and their status as of the last scan. No network access.
     Status,
+    /// Exit non-zero unless the labelled purchases have the expected status as of the
+    /// last scan. No network access.
+    Check {
+        /// Label of a purchase that must be paid. Repeatable.
+        #[arg(long)]
+        paid: Vec<String>,
+        /// Label of a purchase that must be underpaid. Repeatable.
+        #[arg(long)]
+        underpaid: Vec<String>,
+    },
     /// Print the unified incoming viewing key to publish for the demo account.
     ViewingKey,
 }
@@ -78,6 +88,14 @@ async fn main() -> Result<()> {
             let state = store::load(&cli.dir)?;
             let tip = state.last_scanned_height.unwrap_or(0);
             print_status(&state, tip);
+            Ok(())
+        }
+        Cmd::Check { paid, underpaid } => {
+            let state = store::load(&cli.dir)?;
+            for line in state.check(&paid, &underpaid)? {
+                println!("{line}");
+            }
+            println!("CHECK PASS");
             Ok(())
         }
         Cmd::ViewingKey => {

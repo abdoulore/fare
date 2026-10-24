@@ -199,6 +199,48 @@ impl State {
         out
     }
 
+    /// Canary verdict as of the last scan. Every `paid` label must be `Paid` and every
+    /// `underpaid` label must be `Underpaid`. Returns one line per purchase on success,
+    /// and an error naming every mismatch otherwise. Unknown or repeated labels are errors.
+    pub fn check(&self, paid: &[String], underpaid: &[String]) -> Result<Vec<String>> {
+        let tip = self.last_scanned_height.ok_or_else(|| anyhow!("no scan recorded yet, run `fare-scanner scan` first"))?;
+        if paid.is_empty() && underpaid.is_empty() {
+            bail!("nothing to check, pass --paid or --underpaid");
+        }
+        let req = self.merchant.required_confirmations;
+        let mut lines = Vec::new();
+        let mut failures = Vec::new();
+        let expected = paid.iter().map(|l| (l, true)).chain(underpaid.iter().map(|l| (l, false)));
+        for (label, want_paid) in expected {
+            let mut matches = self.purchases.iter().filter(|p| p.label.as_deref() == Some(label.as_str()));
+            let purchase = match (matches.next(), matches.next()) {
+                (Some(p), None) => p,
+                (None, _) => bail!("no purchase labelled '{label}'"),
+                (Some(_), Some(_)) => bail!("more than one purchase labelled '{label}'"),
+            };
+            let status = purchase.status(tip, req);
+            let ok = match status {
+                Status::Paid { .. } => want_paid,
+                Status::Underpaid { .. } => !want_paid,
+                _ => false,
+            };
+            let line = format!(
+                "{label}: {} (expected {}) at tip {tip}",
+                status.label(),
+                if want_paid { "paid" } else { "underpaid" }
+            );
+            if ok {
+                lines.push(line);
+            } else {
+                failures.push(line);
+            }
+        }
+        if !failures.is_empty() {
+            bail!("canary check failed:\n  {}", failures.join("\n  "));
+        }
+        Ok(lines)
+    }
+
     /// Lowest height a scan must start from to see every purchase's payments.
     pub fn scan_start(&self) -> u64 {
         self.purchases

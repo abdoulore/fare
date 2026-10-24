@@ -12,7 +12,7 @@ pub type Client = CompactTxStreamerClient<Channel>;
 
 pub fn default_server(network: &str) -> &'static str {
     match network {
-        "test" => "https://lightwalletd.testnet.cipherscan.app:443",
+        "test" => "https://testnet.zec.rocks:443",
         _ => "https://lightwalletd.mainnet.cipherscan.app:443",
     }
 }
