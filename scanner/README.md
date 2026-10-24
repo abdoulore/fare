@@ -19,20 +19,23 @@ fare init --ufvk <key>            # or bring an existing unified full viewing ke
 fare mint --zec 0.001             # fresh address + ZIP-321 pay URI, no memo
 fare scan --mempool --check-transparent
 fare status                       # last scan, no network
+fare check --paid canary --underpaid underpay   # exit 1 unless statuses match, no network
 fare viewing-key                  # incoming-only key to publish for the demo account
 ```
 
-`--server <url>` on `init` picks the lightwalletd. Default: CipherScan's public server for the network.
+`--server <url>` on `init` picks the lightwalletd. Default: `testnet.zec.rocks` on testnet, CipherScan on mainnet. CipherScan's testnet server currently presents a certificate for another host name.
 
 ## Canary (testnet)
 
-1. `fare init --network test`, then move the seed file offline.
-2. `fare mint --zec 0.001 --label canary`
-3. Pay the printed address from a shielded testnet balance (Zodl if it supports testnet, otherwise another Ironwood-ready testnet wallet). Wait about 3 minutes.
-4. `fare scan --mempool --check-transparent`. Pass = `CANARY PASS` with the same txid the wallet shows.
-5. `fare mint --zec 0.001 --label underpay`, pay 0.0005, `fare scan`. Pass = `underpaid (short 0.0005 ZEC)`.
+The canary runs on a GitHub runner: `.github/workflows/testnet-canary.yml` with `pay: true`. It rebuilds the merchant from its viewing key (secret `FARE_TESTNET_UFVK`), mints `canary` and `underpay`, pays them 0.001 and 0.0005 from `fare-wallet` (see `wallet/README.md`), scans, then runs:
 
-If the scan reports zero Ironwood actions over hundreds of blocks, the server is not serving Ironwood data: rerun `init` in a new directory with `--server`.
+```
+fare check --paid canary --underpaid underpay
+```
+
+`scan` always exits 0; `check` is what fails the run. Pass = a green run with `CANARY PASS` naming the payer's txid and `underpay` at `underpaid (short 0.0005 ZEC)`.
+
+If the scan reports zero Ironwood actions over hundreds of blocks, the server is not serving Ironwood data: point `--server` at another Ironwood-ready lightwalletd.
 
 ## Privacy rules, enforced by tests
 
@@ -56,4 +59,4 @@ Not yet proven: the live network path. That is the canary.
 cargo test
 ```
 
-11 tests: exact ZEC parsing, attribution across 8 cases (exact, underpaid, Orchard list, foreign key, wrong-pool note, wallet's own address, transparent-funded, note hidden between decoys), mempool then confirmation then overpayment, address round trip, key encoding, seed generation, three source invariants.
+19 tests: the canary verdict across 8 cases (pass, pending, mempool only, underpaid listed as paid, paid listed as underpaid, unknown label, repeated label, no scan yet), exact ZEC parsing, attribution across 8 cases (exact, underpaid, Orchard list, foreign key, wrong-pool note, wallet's own address, transparent-funded, note hidden between decoys), mempool then confirmation then overpayment, address round trip, key encoding, seed generation, three source invariants.

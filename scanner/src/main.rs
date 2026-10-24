@@ -167,7 +167,7 @@ async fn init(
     if let Some(path) = seed_file {
         println!();
         println!("Seed phrase written to {}", path.display());
-        println!("Move it offline now. Restore it in Zodl to spend what Fare receives.");
+        println!("Move it offline now. Restore it in a wallet to spend what Fare receives.");
         println!("The scanner never reads it again; it runs on the viewing key in state.json.");
     }
     Ok(())
@@ -212,7 +212,7 @@ async fn mint(dir: &Path, zec: &str, label: Option<String>) -> Result<()> {
     println!("  address   {address}");
     println!("  pay URI   {pay_uri}");
     println!();
-    println!("Pay it from a shielded balance in Zodl, then run `fare-scanner scan`.");
+    println!("Pay it from a shielded balance, then run `fare-scanner scan`.");
     Ok(())
 }
 

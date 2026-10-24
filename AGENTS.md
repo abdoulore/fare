@@ -25,21 +25,22 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 - **Review before build.** Architectural judgment calls go to the owner as a short question with your recommendation. Do not decide them yourself. Implementation details inside locked decisions are yours.
 - **Canary rule.** Prove each primitive with real data before building on it. Gates are below.
 - **Never demo only the happy path.** Every feature ships with its refusal cases and tests.
-- **On-chain proof required.** The final demo uses real mainnet txids, not mocks.
+- **On-chain proof required.** The demo uses real testnet txids, not mocks.
 - **Research before asking** when a fact can be verified (crate source, RFCs, official docs).
 - **Writing:** direct, short, factual, no speculative claims. Label anything simulated as simulated, in the UI and in the README.
 
-## Status (Oct 23)
+## Status (Oct 24)
 
 | Part | State |
 | --- | --- |
-| `scanner/` (Rust) | Built. 11 tests green, clippy clean. Testnet canary pending: the owner runs it. |
+| `scanner/` (Rust) | Built. 19 tests green, clippy clean. `check` makes the canary fail when it fails. |
+| `wallet/` (Rust) | Built Oct 24. 26 tests green, clippy clean. Not yet run against the chain. |
 | `token-canary/` (Node) | Passed 11 of 11 checks with 100 tokens. Native signing measured. |
 | Issuer, origin, SDK, demo API, panel | Not started. Blocked on gate 1. |
 
 ## Gates
 
-1. **Zcash canary** (owner runs it on testnet for now, `init --network test`). Pass: `CANARY PASS` with the same txid the paying wallet shows, plus a second purchase that stays `underpaid`. Until it passes, do not start issuer, origin or SDK work. Fixing scanner bugs the canary reveals is allowed.
+1. **Zcash canary, testnet. Open.** The owner dispatches `.github/workflows/testnet-canary.yml` with `pay: true`: it pays both purchases from `fare-wallet`, scans and runs `fare-scanner check`. Pass: a green run whose log shows `CANARY PASS` with the payer's txid, `underpay` staying `underpaid`, and `check` exiting 0. Record the run URL and txid here when it passes. Until then, do not start issuer, origin or SDK work. Fixing scanner or wallet bugs the canary reveals is allowed.
 2. **Token canary.** Passed Oct 23 (`token-canary/canary.mjs`).
 
 ## Locked decisions
@@ -52,10 +53,10 @@ Do not change these without the owner.
 | Tokens | Privacy Pass publicly verifiable tokens, Blind RSA 2048, PSS (RFC 9578 type 2) |
 | Issue tokens at | 1 confirmation (about 75 s). Never from the mempool alone |
 | Payment matching | Fresh shielded-only address per purchase, matched by diversifier index. No memo, no transaction lookups |
-| Demo payer | Ore paying from Zodl. Headless agent wallet is a stretch goal |
+| Demo payer | `fare-wallet`, a headless testnet payer (owner, Oct 24). Consumer wallets are not used: Noir's testnet build signs with the pre-Ironwood branch id |
 | Demo API | An LLM or search proxy an agent calls in a loop |
 | Proof for judges | Demo merchant's incoming viewing key published |
-| Networks | Offline fixtures and testnet for development and the canary (owner, Oct 23). Final run on mainnet unless the owner changes it |
+| Networks | Testnet for the canary and the demo (owner, Oct 24). Offline fixtures for development. Server: `testnet.zec.rocks` |
 
 ## Open decisions
 
@@ -85,8 +86,16 @@ fare/
     src/zec.rs         exact ZEC parsing, no floats
     src/main.rs        CLI: init, mint, scan, status, viewing-key
     tests/attribution.rs   real note encryption through the scanner
+    tests/check.rs         the canary verdict
     tests/invariants.rs    source checks that fail the build on leaks
+  wallet/              Rust: fare-wallet, headless testnet payer
+    src/request.rs     which zcash: URIs it pays (one shielded recipient, no memo, under --max-zec)
+    src/seed.rs        seed from FARE_PAYER_SEED only
+    src/wallet.rs      database, sync, balance, address, propose, build, broadcast
+    src/cache.rs       in-memory BlockCache for sync::run
+    tests/             refusals, CLI, source invariants
   token-canary/        Node: Privacy Pass proof (canary.mjs, native-sign.mjs)
+  .github/workflows/   ci.yml, testnet-canary.yml, testnet-wallet.yml
 ```
 
 Planned, create as needed: `issuer/` (TypeScript: purchases API, epoch keys, issuer directory), `origin/` (TypeScript: 402 middleware, verify, spent-nonce store), `sdk/` (TypeScript client), `demo/` (demo API and agent loop), `panel/` (server-view panel).
@@ -99,11 +108,18 @@ cargo build --release
 cargo test                       # must stay green
 cargo clippy --all-targets       # must stay clean
 
-./target/release/fare-scanner init --network main [--server URL] [--ufvk KEY] [--birthday H]
+./target/release/fare-scanner init --network test [--server URL] [--ufvk KEY] [--birthday H]
 ./target/release/fare-scanner mint --zec 0.001 [--label X]
 ./target/release/fare-scanner scan [--mempool] [--check-transparent] [--from H]
 ./target/release/fare-scanner status
+./target/release/fare-scanner check --paid LABEL [--paid ...] --underpaid LABEL [...]
 ./target/release/fare-scanner viewing-key
+
+cd wallet                        # FARE_PAYER_SEED in the environment, testnet phrase only
+cargo test && cargo clippy --all-targets -- -D warnings
+./target/release/fare-wallet init --birthday H
+./target/release/fare-wallet sync | balance | address
+./target/release/fare-wallet pay "zcash:<UA>?amount=0.001" --max-zec 0.002 [--wait-secs N]
 
 cd token-canary
 npm install
@@ -141,7 +157,16 @@ Already checked against crate source and official docs (sources in `docs/SPEC.md
 - `BlockRange.pool_types` empty means shielded pools only. Add `Transparent` to get `vin`, which is how transparent funding is flagged. Older servers may refuse pool filters; the scanner falls back.
 - Crates: `orchard` 0.16.0, `zcash_client_backend` 0.25.0 (features `lightwalletd-tonic`, `lightwalletd-tonic-tls-webpki-roots`, `lightwalletd-tonic-transport`), `zcash_keys` 0.17.0, `zcash_protocol` 0.11.0, `zcash_note_encryption` 0.5.1, `zip32` 0.3.0, `tonic` 0.14. UFVK and UIVK `encode` return `Result`.
 - `Rho::from_nf_old` is crate-private. Use `Rho::from_bytes(&nf.to_bytes())`.
-- Default lightwalletd: `https://lightwalletd.mainnet.cipherscan.app:443`, `https://lightwalletd.testnet.cipherscan.app:443`.
+- Default lightwalletd: testnet `https://testnet.zec.rocks:443`; mainnet `https://lightwalletd.mainnet.cipherscan.app:443`. CipherScan's testnet server presents a certificate for `api.testnet.cipherscan.app` (Oct 24), so it fails TLS.
+- Claude Code cloud sandboxes cannot reach lightwalletd (the scanner and wallet connect directly and DNS is blocked). Anything that talks to the chain runs on a GitHub Actions runner.
+
+**Payer wallet (`zcash_client_sqlite` 0.23.0, `zcash_proofs` 0.31.0)**
+
+- `sync::run(client, params, cache, db, batch)` needs a `BlockCache`. `zcash_client_sqlite` 0.23 implements only `BlockSource` (for `BlockDb` and `FsBlockDb`), so `wallet/src/cache.rs` provides an in-memory one.
+- `sync::run` refreshes UTXOs by address only with the `transparent-inputs` feature. The wallet leaves it off.
+- `propose_standard_transfer_to_address` returns `Error::InsufficientFunds { available, required }`, and `Error::ScanRequired` before the first scan.
+- After NU6.3, `propose_transfer` plans payments funded from Orchard notes as ZIP 318 canonical crossings itself.
+- `LocalTxProver::bundled()` (feature `bundled-prover`) needs no parameter download. The release binary is about 73 MB.
 
 **Privacy Pass (`@cloudflare/privacypass-ts` 0.9.0)**
 
@@ -174,9 +199,9 @@ From the spec. Keep these shapes.
 
 **Oct 25: redemption.** Origin middleware with the checks in invariant 9, the demo API and agent loop, the server-view panel with anonymity-set size.
 
-**Oct 26: failure paths and mainnet.** Every row of "Failure paths" in `docs/SPEC.md` becomes a test or a scripted demo step. Mainnet run with paid, underpaid and second-payment purchases. Publish the demo viewing key (`fare-scanner viewing-key`).
+**Oct 26: failure paths and the testnet run.** Every row of "Failure paths" in `docs/SPEC.md` becomes a test or a scripted demo step. Testnet run with paid, underpaid and second-payment purchases, paid by `fare-wallet`. Publish the demo viewing key (`fare-scanner viewing-key`).
 
-**Oct 27: proof and polish.** README with a real-versus-mocked table and the residuals, CI (cargo test, clippy, Node tests).
+**Oct 27: proof and polish.** README with a real-versus-mocked table and the residuals. CI is in place (scanner, wallet, token canaries).
 
 **Oct 28: ship.** Demo video, submission text, repo public.
 
@@ -184,18 +209,19 @@ From the spec. Keep these shapes.
 
 - CI green, clippy clean.
 - README: what is real, what is mocked, how to run, residuals.
-- Mainnet txids for a paid purchase, an underpaid purchase and a second payment, with CipherScan screenshots showing nothing visible.
+- Testnet txids for a paid purchase, an underpaid purchase and a second payment, with testnet explorer screenshots showing nothing visible.
 - Demo video: pay, detect, issue, N calls, replay refused, panel shows no link between purchases and calls.
 - Repo public, every commit dated inside the build window.
 
 ## Git
 
 - Small commits, each saying what changed and why. No em dashes.
-- Never commit `fare-data/`, seed files, `.env`, keys, `node_modules/` or `target/`.
+- Never commit `fare-data/`, `fare-wallet-data/`, wallet databases, seed files, `.env`, keys, `node_modules/` or `target/`.
+- Never log the payer seed, a spending key or a full viewing key.
 
 ## Ask the owner before
 
 - Changing a locked decision or a privacy invariant.
 - Adding a dependency that phones home, or any hosted service.
-- Spending real ZEC. The owner runs mainnet payments.
+- Spending real ZEC. The project runs on testnet; the owner dispatches the workflows that pay.
 - Publishing anything: repo visibility, viewing keys, demo URLs.
