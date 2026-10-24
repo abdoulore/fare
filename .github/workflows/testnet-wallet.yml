@@ -1,0 +1,84 @@
+name: Testnet wallet
+
+# Manual runs of the payer wallet on testnet. The seed lives only in the repository
+# secret FARE_PAYER_SEED and reaches only the init and pay steps. The cached wallet
+# database holds no seed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "What to do after syncing"
+        type: choice
+        options: [balance, address, pay]
+        default: balance
+      uri:
+        description: "zcash: URI to pay (action pay only)"
+        required: false
+        default: ""
+      max_zec:
+        description: "Refuse a URI above this many ZEC"
+        required: false
+        default: "0.002"
+      birthday:
+        description: "Payer birthday height (first block that can hold its funds)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  wallet:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: wallet
+    env:
+      SERVER: https://testnet.zec.rocks:443
+      ACTION: ${{ inputs.action }}
+      URI: ${{ inputs.uri }}
+      MAX_ZEC: ${{ inputs.max_zec }}
+      BIRTHDAY: ${{ inputs.birthday }}
+    steps:
+      - name: Validate inputs
+        working-directory: .
+        run: |
+          case "$BIRTHDAY" in ''|*[!0-9]*) echo "birthday must be a block height"; exit 1;; esac
+          echo "$MAX_ZEC" | grep -Eq '^[0-9]+(\.[0-9]{1,8})?$' || { echo "max_zec must be a decimal amount"; exit 1; }
+          if [ "$ACTION" = pay ]; then
+            case "$URI" in zcash:*) ;; *) echo "uri must start with zcash:"; exit 1;; esac
+            case "$URI" in *[[:space:]]*) echo "uri must not contain spaces"; exit 1;; esac
+          fi
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: wallet
+      - run: cargo build --release --locked
+      - name: Restore wallet database
+        uses: actions/cache@v4
+        with:
+          path: wallet/fare-wallet-data
+          key: fare-wallet-db-test-${{ inputs.birthday }}-${{ github.run_id }}
+          restore-keys: fare-wallet-db-test-${{ inputs.birthday }}-
+      - name: Init
+        env:
+          FARE_PAYER_SEED: ${{ secrets.FARE_PAYER_SEED }}
+        run: |
+          test -n "$FARE_PAYER_SEED" || { echo "secret FARE_PAYER_SEED is not set"; exit 1; }
+          ./target/release/fare-wallet --server "$SERVER" init --birthday "$BIRTHDAY"
+      - name: Sync
+        run: ./target/release/fare-wallet --server "$SERVER" sync
+      - name: Balance
+        if: inputs.action == 'balance'
+        run: ./target/release/fare-wallet balance
+      - name: Address
+        if: inputs.action == 'address'
+        run: ./target/release/fare-wallet address
+      - name: Pay
+        if: inputs.action == 'pay'
+        env:
+          FARE_PAYER_SEED: ${{ secrets.FARE_PAYER_SEED }}
+        run: |
+          ./target/release/fare-wallet --server "$SERVER" pay "$URI" --max-zec "$MAX_ZEC" --wait-secs 600
+          ./target/release/fare-wallet balance

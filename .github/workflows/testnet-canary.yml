@@ -1,16 +1,30 @@
 name: Testnet canary
 
-# Manual run of gate 1 against testnet. Rebuilds the canary merchant from its viewing
-# key (repository secret FARE_TESTNET_UFVK), mints the same two purchases at indices
-# base+0 and base+1, and scans. Addresses depend only on the key and the index, so
-# they match the ones handed to the payer. The runner never holds a seed.
+# Gate 1 on testnet. Rebuilds the canary merchant from its viewing key (secret
+# FARE_TESTNET_UFVK) and mints the same two purchases at indices base+0 and base+1:
+# addresses depend only on the key and the index. The runner never holds the
+# merchant's seed.
+#
+# pay: false  scan from `from` (a height below the payments) and check.
+# pay: true   also pay both purchases from fare-wallet (secret FARE_PAYER_SEED):
+#             canary in full, underpay with half the price. Then scan from the height
+#             recorded before paying and check. One click runs the whole canary.
 
 on:
   workflow_dispatch:
     inputs:
+      pay:
+        description: "Pay both purchases from fare-wallet first"
+        type: boolean
+        default: false
       from:
-        description: "Scan from this height: a block below the first payment"
-        required: true
+        description: "Scan from this height (required when pay is off)"
+        required: false
+        default: ""
+      payer_birthday:
+        description: "Payer wallet birthday height (required when pay is on)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -18,31 +32,80 @@ permissions:
 jobs:
   canary:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: scanner
     env:
       SERVER: https://testnet.zec.rocks:443
+      PAY: ${{ inputs.pay }}
+      FROM: ${{ inputs.from }}
+      PAYER_BIRTHDAY: ${{ inputs.payer_birthday }}
+      SCANNER: ./scanner/target/release/fare-scanner
+      WALLET: ./wallet/target/release/fare-wallet
     steps:
+      - name: Validate inputs
+        run: |
+          if [ "$PAY" = true ]; then
+            case "$PAYER_BIRTHDAY" in ''|*[!0-9]*) echo "payer_birthday must be a block height"; exit 1;; esac
+          else
+            case "$FROM" in ''|*[!0-9]*) echo "from must be a block height"; exit 1;; esac
+          fi
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: scanner
-      - run: cargo build --release --locked
+          workspaces: |
+            scanner
+            wallet
+      - name: Build scanner
+        run: cargo build --release --locked --manifest-path scanner/Cargo.toml
+      - name: Build wallet
+        if: inputs.pay
+        run: cargo build --release --locked --manifest-path wallet/Cargo.toml
+
       - name: Rebuild merchant from the viewing key
         env:
           FARE_TESTNET_UFVK: ${{ secrets.FARE_TESTNET_UFVK }}
         run: |
           test -n "$FARE_TESTNET_UFVK" || { echo "secret FARE_TESTNET_UFVK is not set"; exit 1; }
-          ./target/release/fare-scanner init --network test --server "$SERVER" --ufvk "$FARE_TESTNET_UFVK"
-          ./target/release/fare-scanner mint --zec 0.001 --label canary
-          ./target/release/fare-scanner mint --zec 0.001 --label underpay
-      - name: Scan
+          $SCANNER init --network test --server "$SERVER" --ufvk "$FARE_TESTNET_UFVK"
+          $SCANNER mint --zec 0.001 --label canary
+          $SCANNER mint --zec 0.001 --label underpay
+
+      - name: Restore payer wallet database
+        if: inputs.pay
+        uses: actions/cache@v4
+        with:
+          path: wallet/fare-wallet-data
+          key: fare-wallet-db-test-${{ inputs.payer_birthday }}-${{ github.run_id }}
+          restore-keys: fare-wallet-db-test-${{ inputs.payer_birthday }}-
+      - name: Pay both purchases
+        if: inputs.pay
         env:
-          FROM: ${{ inputs.from }}
+          FARE_PAYER_SEED: ${{ secrets.FARE_PAYER_SEED }}
         run: |
-          case "$FROM" in ''|*[!0-9]*) echo "from must be a block height"; exit 1;; esac
-          ./target/release/fare-scanner scan --mempool --check-transparent --from "$FROM"
-      - name: Check
-        run: ./target/release/fare-scanner check --paid canary --underpaid underpay
+          test -n "$FARE_PAYER_SEED" || { echo "secret FARE_PAYER_SEED is not set"; exit 1; }
+          W="$WALLET --dir wallet/fare-wallet-data --server $SERVER"
+          $W init --birthday "$PAYER_BIRTHDAY"
+          $W sync
+          $W balance
+          # Scan from the tip as of minting: the payments come after it.
+          echo "FROM=$(jq -r '[.purchases[].created_height] | min' fare-data/state.json)" >> "$GITHUB_ENV"
+          CANARY_URI=$(jq -r '.purchases[] | select(.label=="canary") | .pay_uri' fare-data/state.json)
+          UNDERPAY_ADDR=$(jq -r '.purchases[] | select(.label=="underpay") | .address' fare-data/state.json)
+          case "$CANARY_URI" in zcash:*'?amount=0.001') ;; *) echo "unexpected canary URI"; exit 1;; esac
+          $W pay "$CANARY_URI" --max-zec 0.001
+          $W pay "zcash:$UNDERPAY_ADDR?amount=0.0005" --max-zec 0.0005 --wait-secs 900
+          $W balance
+
+      - name: Scan and check
+        run: |
+          case "$FROM" in ''|*[!0-9]*) echo "no scan height"; exit 1;; esac
+          # Paid needs 1 confirmation. Poll up to 20 minutes, then report the last scan.
+          for _ in $(seq 1 40); do
+            if $SCANNER scan --mempool --check-transparent --from "$FROM" > scan.log 2>&1 \
+              && $SCANNER check --paid canary --underpaid underpay > /dev/null 2>&1; then
+              break
+            fi
+            [ "$PAY" = true ] || break
+            sleep 30
+          done
+          cat scan.log
+          $SCANNER check --paid canary --underpaid underpay
