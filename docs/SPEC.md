@@ -86,20 +86,24 @@ Every row below is either a test that runs in CI or a step in the demo video, so
 
 | Case | Expected behavior | Proven by |
 | --- | --- | --- |
-| Underpayment | Purchase stays `underpaid`, shortfall shown, no tokens | Scanner test; testnet pay of half the price in the canary |
-| Overpayment or a second payment | `paid`, extra recorded, still exactly N tokens | Scanner test |
-| Payment seen only in mempool | `in mempool`, no tokens until 1 confirmation | Live demo with `--mempool` |
-| Payment to a non-purchase address of the same key | Counted as unattributed, never issues tokens | Scanner test |
-| Payment to a different key | Not detected at all | Scanner test |
-| Old-format note inside the Ironwood list | Rejected by the Ironwood domain | Scanner test |
-| Payment funded from transparent inputs | `paid`, flagged as leaky funding in the panel | Scanner test |
-| Payer asked to pay a transparent address, a memo, or above its ceiling | Refused before anything is built | Wallet tests |
-| Payer without enough shielded funds | `insufficient funds`, nothing sent | Wallet test |
-| Token reused | `401 token_reused` | Origin test; replay live in the video |
-| Token signed by another key | `401 bad_signature` | Origin test |
-| Token from a retired epoch | Rejected after the grace window | Origin test |
-| Origin presents an unpinned key | Client aborts before ordering | SDK test |
-| Reorg drops a paid block | Tokens already issued stand; rescan marks the payment missing in the panel | Accepted risk at 1 confirmation, stated in README |
+| Underpayment | Purchase stays `underpaid`, shortfall shown, no tokens | Scanner `attributes_every_case_from_compact_blocks_alone` and `tests/check.rs`; issuer `no signatures until the scanner says paid`; testnet canary run 4 and the failure-paths run |
+| Overpayment or a second payment | `paid`, extra recorded, still exactly N tokens | Scanner `mempool_then_confirmation_then_overpayment`; testnet failure-paths run (`second`) |
+| Payment seen only in mempool | `in mempool`, no tokens until 1 confirmation | Scanner `mempool_then_confirmation_then_overpayment`, serve `status_follows_the_chain`; issuer `no signatures until the scanner says paid`; testnet serve run (pending, in_mempool, paid) |
+| Payment to a non-purchase address of the same key | Counted as unattributed, never issues tokens | Scanner `attributes_every_case_from_compact_blocks_alone` (wallet's own address) |
+| Payment to a different key | Not detected at all | Scanner `attributes_every_case_from_compact_blocks_alone` (foreign key) |
+| Old-format note inside the Ironwood list | Rejected by the Ironwood domain | Scanner `attributes_every_case_from_compact_blocks_alone` (wrong-pool note) |
+| Payment funded from transparent inputs | `paid`, flagged as leaky funding in the panel | Scanner `attributes_every_case_from_compact_blocks_alone`, serve `underpaid_and_transparent_funded_purchases_say_so`; issuer `a transparent-funded payment is signed but flagged` |
+| Wrong pack size | Refused before anything is minted | Issuer `refuses any pack size but the fixed one` |
+| Token reused | `401 token_reused` | Origin `a replayed token is refused`, `one token sent twice at once is served once`; testnet demo run (agent replay) |
+| Tampered token | `401 bad_signature` | Origin `tampered and malformed tokens are bad_signature` |
+| Token signed by another issuer key | `401 unknown_key` (its key id matches no directory key) | Origin `a token from another issuer key is unknown_key` |
+| Token for another origin | `401 wrong_challenge` | Origin `a token for another origin is wrong_challenge` |
+| Token from a retired epoch | `401 expired_epoch` after the grace window | Origin `after rotation and grace, tokens under the old key are expired_epoch` |
+| Origin presents an unpinned key | Client aborts before ordering | SDK `aborts before ordering when the origin presents an unpinned key`, `aborts when the origin presents a key the directory does not list` |
+| Issuer rotates its key | Client follows only a key the directory lists, drops retired tokens | SDK `follows a rotation through the directory and drops tokens under the retired key` |
+| Malformed API request | Refused before the token is spent | Demo `a malformed body is refused before the token is spent` |
+| Payer asked to pay a transparent address, a memo, or above its ceiling | Refused before anything is built | Wallet `tests/refusals.rs`, `tests/cli.rs` |
+| Reorg drops a paid block | Tokens already issued stand; the rescan drops the payment, so the panel shows the purchase unpaid | Serve `a_rescan_drops_a_payment_a_reorg_removed`; accepted risk at 1 confirmation, stated in README |
 
 ## Canary
 
