@@ -283,3 +283,43 @@ test('an order the issuer refuses surfaces its reason', async () => {
     await origin.close();
   }
 });
+
+test('the core runs without Node: no node: imports, no Buffer', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../src/core.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(src, /from 'node:|require\(|\bBuffer\b|process\.env/);
+});
+
+test('core encoders match Node and a memory client persists every change before use', async () => {
+  const { b64url, fromB64url, sha256hex, MemoryFareClient } = await import('../src/core.ts');
+  for (const n of [0, 1, 2, 3, 31, 256]) {
+    const bytes = new Uint8Array(n).map((_, i) => (i * 37 + n) & 0xff);
+    assert.equal(b64url(bytes), Buffer.from(bytes).toString('base64url'));
+    assert.deepEqual(fromB64url(b64url(bytes)), bytes);
+    assert.equal(await sha256hex(bytes), createHash('sha256').update(bytes).digest('hex'));
+  }
+
+  const origin = await testOrigin(tokenKey, verifyKey);
+  try {
+    const saves: number[] = [];
+    const sdk = new MemoryFareClient({ issuerUrl: issuer.url, pollMs: 10, timeoutMs: 2_000 }, { tokens: [] }, async (s) => {
+      await new Promise((r) => setTimeout(r, 5));
+      saves.push(s.tokens.length);
+    });
+    await sdk.pin();
+    const challenge = sdk.checkChallenge((await fetch(origin.url)).headers.get('www-authenticate'));
+    let blinded = 0;
+    const purchase = await sdk.order(challenge, { pack: PACK, price_zec: '0.001', issuer: issuer.url }, (done) => (blinded = done));
+    assert.equal(blinded, PACK);
+    scanner.statuses.set(purchase.purchase_id, { status: 'paid' });
+    assert.equal(await sdk.collect(purchase), PACK);
+    const auth = await sdk.spend(challenge);
+    assert.ok(auth);
+    assert.equal(saves.at(-1), PACK - 1, 'the spend was persisted before spend() resolved');
+    await sdk.forget();
+    assert.equal(sdk.tokenCount(), 0);
+    assert.equal(sdk.pinnedKey, undefined);
+  } finally {
+    await origin.close();
+  }
+});
