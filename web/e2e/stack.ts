@@ -51,7 +51,10 @@ const scanner: RequestListener = (req, res) => {
   }
   if (req.method === 'GET' && req.url === '/health') return json(res, 200, { scanned_to: tip, purchases: purchases.size });
   if (req.method === 'GET' && req.url === '/ledger') {
-    const rows = [...purchases.values()].map((p) => ({ index: p.index, price_zat: PRICE_ZAT, received_zat: p.received, payments: p.received ? 1 : 0, height: p.height, status: p.status }));
+    // Like the hosted ledger: payments from earlier runs (+0 to +6) that this state has no
+    // purchase record for, then this stack's purchases.
+    const earlier = [0, 1, 2, 3, 4, 5, 6].map((i) => ({ index: i, price_zat: null, received_zat: i === 1 || i === 5 ? 50_000 : 100_000, payments: 1, height: 4_535_557 + i * 80, status: 'no_record' }));
+    const rows = [...earlier, ...[...purchases.values()].map((p) => ({ index: p.index, price_zat: PRICE_ZAT, received_zat: p.received, payments: p.received ? 1 : 0, height: p.height, status: p.status }))];
     return json(res, 200, { scanned_to: tip, rows });
   }
   const m = /^\/purchases\/([0-9a-f]{32})$/.exec(req.url ?? '');

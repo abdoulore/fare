@@ -176,11 +176,12 @@ progress::-moz-progress-bar { background: var(--accent); }
 
 .qr { width: 200px; height: 200px; background: #fffdf8; padding: 10px; border-radius: 8px; }
 .qr rect { fill: #15120e; }
-.pay-options { display: grid; grid-template-columns: 1fr; gap: 14px; }
-@media (min-width: 760px) { .pay-options { grid-template-columns: 3fr 2fr; } }
+.pay-options { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+@media (min-width: 760px) { .pay-options { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
 
 /* Server view */
-.ledger { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.ledger { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.ledger > * { min-width: 0; }
 @media (min-width: 820px) { .ledger { grid-template-columns: minmax(0, 5fr) 84px minmax(0, 4fr); } }
 .gap {
   border: 1px dashed var(--line); border-radius: 12px; display: grid; place-items: center; text-align: center;
@@ -197,15 +198,15 @@ td.num, th.num { text-align: right; }
 .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--dot); display: block; }
 .dots i.spent { background: var(--dot-spent); }
 
-.flow { list-style: none; padding: 0; margin: 20px 0; display: grid; gap: 12px; grid-template-columns: 1fr; }
-@media (min-width: 760px) { .flow { grid-template-columns: repeat(3, 1fr); } }
+.flow { list-style: none; padding: 0; margin: 20px 0; display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 760px) { .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .flow li { border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
 .flow li b { font: 500 0.8rem var(--mono); color: var(--accent); display: block; margin-bottom: 4px; }
 
 .hero { padding: 8px 0 20px; }
 .hero .row { margin-top: 18px; }
-.grid2 { display: grid; gap: 14px; grid-template-columns: 1fr; }
-@media (min-width: 760px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+.grid2 { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 760px) { .grid2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 img.arch { max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 pre { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; overflow-x: auto; font-size: 0.85rem; }
 
