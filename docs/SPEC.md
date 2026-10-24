@@ -15,9 +15,12 @@ Fare sells API access for shielded ZEC and redeems it with unlinkable tokens: th
 | Issue tokens at | 1 confirmation (about 75 s) |
 | Payment matching | Fresh shielded address per purchase, matched by diversifier index. No memo, no txid lookups |
 | Demo payer | `fare-wallet`, a headless testnet payer (owner, Oct 24). Consumer wallets are not used |
-| Demo API | An LLM or search proxy an agent calls in a loop |
+| Demo API | LLM proxy an agent calls in a loop. With no model API key on the demo host, a canned responder labeled "simulated" (owner, Oct 24) |
 | Proof for judges | Demo merchant viewing key published, so anyone can verify every purchase |
 | Networks | Testnet for the canary and the demo (owner, Oct 24). Offline fixtures for development |
+| Issuer signing | Native OpenSSL blind RSA, each signature verified before release (owner, Oct 24) |
+| Pack and price | One pack: 100 calls for 0.001 TAZ (owner, Oct 24) |
+| Issuer key epoch | 7 days, previous key valid for a 24 h grace window (owner, Oct 24) |
 
 ## Architecture
 

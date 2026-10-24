@@ -58,20 +58,16 @@ Do not change these without the owner.
 | Issue tokens at | 1 confirmation (about 75 s). Never from the mempool alone |
 | Payment matching | Fresh shielded-only address per purchase, matched by diversifier index. No memo, no transaction lookups |
 | Demo payer | `fare-wallet`, a headless testnet payer (owner, Oct 24). Consumer wallets are not used: Noir's testnet build signs with the pre-Ironwood branch id |
-| Demo API | An LLM or search proxy an agent calls in a loop |
 | Proof for judges | Demo merchant's incoming viewing key published |
 | Networks | Testnet for the canary and the demo (owner, Oct 24). Offline fixtures for development. Server: `testnet.zec.rocks` |
+| Issuer signing | Native OpenSSL blind RSA, each signature verified against the public key before release (owner, Oct 24) |
+| Pack and price | One pack: 100 calls for 0.001 TAZ. The issuer refuses any other N (owner, Oct 24) |
+| Demo API | LLM proxy. With no model API key on the demo host, a canned responder labeled "simulated" in the UI and README (owner, Oct 24) |
+| Issuer key epoch | Rotates every 7 days; the previous key stays valid for a 24 h grace window (owner, Oct 24) |
 
 ## Open decisions
 
-Ask the owner before implementing. Recommendation in bold.
-
-| Decision | Options | Recommendation |
-| --- | --- | --- |
-| Issuer signing | Library JavaScript (300 ms per token) or native OpenSSL (0.42 ms, byte-identical output) | **Native, with verify-before-release** |
-| Pack size and price | One fixed pack, or several | **One pack of 100 calls**; the owner sets the price |
-| Demo API | LLM proxy or search proxy | Owner's call |
-| Issuer key epoch | Daily or weekly rotation | **7 days, with a 24 h grace window for the previous key** |
+None. All four were decided Oct 24 and moved to Locked decisions.
 
 ## Repository layout
 
@@ -180,7 +176,7 @@ Already checked against crate source and official docs (sources in `docs/SPEC.md
 - `Origin.verify` checks the signature only. The origin must check key id, challenge digest (SHA-256 of the serialized challenge) and the spent set itself.
 - Sizes: token 354 bytes, `Authorization` header about 491 characters, `WWW-Authenticate` about 538.
 - Speed on Node 22: client blind about 31 ms, library sign 300 ms, native sign 0.42 ms, verify about 0.2 ms.
-- Native blind signing is one RSA private operation with no padding: `crypto.privateDecrypt({ key, padding: RSA_NO_PADDING }, blindedMsg)`, then `publicEncrypt` with no padding must give back the blinded message before the signature is released. See `token-canary/native-sign.mjs`. Use it only after the owner approves native signing.
+- Native blind signing is one RSA private operation with no padding: `crypto.privateDecrypt({ key, padding: RSA_NO_PADDING }, blindedMsg)`, then `publicEncrypt` with no padding must give back the blinded message before the signature is released. See `token-canary/native-sign.mjs`. Approved by the owner Oct 24.
 
 ## API contract
 
