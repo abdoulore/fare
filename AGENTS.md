@@ -110,7 +110,7 @@ fare/
   origin/              TypeScript middleware: 402 challenge, invariant 9 checks, spent-nonce store
   demo/                TypeScript: LLM proxy (src/server.ts, src/llm.ts), agent (src/agent.ts), panel (src/panel.ts)
   token-canary/        Node: Privacy Pass proof (canary.mjs, native-sign.mjs)
-  .github/workflows/   ci.yml, testnet-canary.yml, testnet-wallet.yml, testnet-serve.yml, testnet-demo.yml
+  .github/workflows/   ci.yml, testnet-canary.yml, testnet-wallet.yml, testnet-serve.yml, testnet-demo.yml, testnet-failure-paths.yml
 ```
 
 The panel lives in `demo/src/panel.ts`, not a separate `panel/` package.

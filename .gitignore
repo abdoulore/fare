@@ -14,3 +14,4 @@ origin-data/
 **/origin-data/
 agent-state.json
 **/agent-state.json
+scenarios-state.json
