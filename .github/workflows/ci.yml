@@ -92,6 +92,26 @@ jobs:
       - run: npm run typecheck --prefix origin
       - run: npm test --prefix origin
 
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            demo/package-lock.json
+            origin/package-lock.json
+            sdk/package-lock.json
+            issuer/package-lock.json
+      - run: npm ci --prefix issuer
+      - run: npm ci --prefix sdk
+      - run: npm ci --prefix origin
+      - run: npm ci --prefix demo
+      - run: npm run typecheck --prefix demo
+      - run: npm test --prefix demo
+
   token-canary:
     runs-on: ubuntu-latest
     defaults:

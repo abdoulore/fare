@@ -12,3 +12,5 @@ issuer-data/
 **/issuer-data/
 origin-data/
 **/origin-data/
+agent-state.json
+**/agent-state.json

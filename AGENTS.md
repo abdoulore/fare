@@ -39,7 +39,7 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 | `issuer/` (TypeScript) | Built Oct 24. 19 tests green, typecheck clean. Native signing, 7-day epoch keys. |
 | `sdk/` (TypeScript) | Built Oct 24. 12 tests green against the real issuer with a stub scanner. Follows key rotation through the directory (Oct 25). |
 | `origin/` (TypeScript) | Built Oct 25. 11 tests green, end to end with the real issuer and SDK. |
-| Demo API, panel | Oct 25, in progress. |
+| `demo/` (TypeScript) | Built Oct 25. LLM proxy behind the origin (simulated without a model key), agent paying with `fare-wallet`, loopback panel. 9 tests. Not yet run on testnet. |
 
 ## Gates
 
@@ -108,11 +108,12 @@ fare/
     src/scanner.ts     client for fare-scanner serve
   sdk/                 TypeScript client: pin, 402 handling, order, collect, spend
   origin/              TypeScript middleware: 402 challenge, invariant 9 checks, spent-nonce store
+  demo/                TypeScript: LLM proxy (src/server.ts, src/llm.ts), agent (src/agent.ts), panel (src/panel.ts)
   token-canary/        Node: Privacy Pass proof (canary.mjs, native-sign.mjs)
   .github/workflows/   ci.yml, testnet-canary.yml, testnet-wallet.yml, testnet-serve.yml
 ```
 
-Planned, create as needed: `demo/` (demo API and agent loop), `panel/` (server-view panel).
+The panel lives in `demo/src/panel.ts`, not a separate `panel/` package.
 
 ## Commands
 
@@ -141,6 +142,8 @@ npm start                        # ISSUER_LISTEN, ISSUER_DATA, SCANNER_URL
 
 cd sdk && npm ci --prefix ../issuer && npm ci && npm test
 cd origin && npm ci --prefix ../issuer && npm ci --prefix ../sdk && npm ci && npm test
+cd demo && npm ci && npm run api          # API 127.0.0.1:8080, panel 127.0.0.1:8790/panel
+cd demo && CALLS=5 npm run agent          # pays with fare-wallet, then replays a token
 
 cd token-canary
 npm install
