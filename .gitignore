@@ -5,3 +5,6 @@ SEED-MOVE-OFFLINE.txt
 *.json.tmp
 node_modules/
 .env
+fare-wallet-data/
+**/fare-wallet-data/
+*.sqlite

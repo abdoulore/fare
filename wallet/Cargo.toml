@@ -1,0 +1,39 @@
+[package]
+name = "fare-wallet"
+version = "0.1.0"
+edition = "2021"
+description = "Fare payer: a headless testnet wallet that pays Fare purchase URIs from shielded notes only."
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "fare-wallet"
+path = "src/main.rs"
+
+[lib]
+name = "fare_wallet"
+path = "src/lib.rs"
+
+[dependencies]
+zcash_client_backend = { version = "0.25.0", features = ["sync", "lightwalletd-tonic", "lightwalletd-tonic-tls-webpki-roots", "lightwalletd-tonic-transport", "zcash_proofs", "orchard"] }
+zcash_client_sqlite = "0.23.0"
+zcash_proofs = { version = "0.31.0", features = ["bundled-prover"] }
+orchard = "0.16.0"
+zcash_keys = "0.17.0"
+zcash_protocol = "0.11.0"
+zip32 = "0.3.0"
+tonic = { version = "0.14", default-features = false, features = ["channel", "tls-ring", "tls-webpki-roots"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+zcash_primitives = "0.31.0"
+zip321 = "0.10.0"
+secrecy = "0.8"
+bip0039 = "0.14.2"
+rand = "0.10"
+async-trait = "0.1"
+rusqlite = "0.37"
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+fare-scanner = { path = "../scanner" }
+
+[dev-dependencies]
+tempfile = "3"
+zcash_transparent = "0.11.0"
