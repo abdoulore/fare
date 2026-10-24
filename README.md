@@ -4,7 +4,7 @@ Pay once in shielded ZEC. Then every API call carries a token nobody can link ba
 
 Built for ZECATHON 2026, Shielded Payments track. Runs on Zcash testnet.
 
-**Try it:** the hosted demo is not deployed yet. `deploy/` holds everything for one VPS; this line will carry the URL once it is up. Until then, `web/` runs locally (see [Run it](#run-it)).
+**Try it: https://fare.moonrider.online** (Zcash testnet). Buy a pack with the demo payer or your own Ironwood testnet wallet, ask questions, replay a token, and see what the server sees.
 
 ![Fare architecture](docs/architecture.png)
 
@@ -31,7 +31,7 @@ It reveals incoming payments to this demo account only: amount, height, address 
 | +0 | 0.001 | 4,535,557 | `fd1e9ee3f90c0e3bd8bf874e86352ab8fb085158190c5242a27e0afa623af9d9` | Canary: paid, matched by index | [canary](https://github.com/abdoulore/fare/actions/runs/40084407257) |
 | +1 | 0.0005 | 4,535,562 | `0346de58cdaa73d7285e7e91448effa2c437978b44cfdf1bc72a4cf9b866652b` | Canary: underpaid, stays underpaid | [canary](https://github.com/abdoulore/fare/actions/runs/40084407257) |
 | +2 | 0.001 | 4,535,836 | `9a6e1bf355929f15ccf13035d00c8e6dea01e56145d6ea4dbb068d71bdb24740` | Minted over HTTP by `serve`: pending, in mempool, paid | [serve](https://github.com/abdoulore/fare/actions/runs/40091932215) |
-| +3 | 0.001 | (in the verifier's listing) | `2e97c74b44bce98c4b6707928c78df62e6b630b042146b824dea833b964ae5b8` | Whole stack: 402, pay, 100 tokens, 5 calls, replay refused | [demo](https://github.com/abdoulore/fare/actions/runs/40096150452) |
+| +3 | 0.001 | 4,535,984 | `2e97c74b44bce98c4b6707928c78df62e6b630b042146b824dea833b964ae5b8` | Whole stack: 402, pay, 100 tokens, 5 calls, replay refused | [demo](https://github.com/abdoulore/fare/actions/runs/40096150452) |
 | +4 | 0.001 | 4,536,048 | `b01a1fc002e2ff71a6b8438b5f403eda48bdd948a9936b0f01d6e819dc7fa4df` | Paid: 100 tokens, a call succeeds | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) |
 | +5 | 0.0005 | 4,536,052 | `0c3e538be90d9a5bfa60463314a6cd2dd06a092a62486c8dd0f9f39a7a26058d` | Underpaid: no signatures issued | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) |
 | +6 | 0.001 | 4,536,054 | `60d3f691c7b71deb4f7eb890f3e2967971c78ced8cf287d62b1d271c7b30ebf3` | Second payment, first of two | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) |
@@ -64,7 +64,7 @@ The scan needs a machine that can reach `testnet.zec.rocks`. Block explorer scre
 | Panel | Real counts from the issuer's purchase store and the origin's spent set |
 | Frontend (`web/`) | Real: tokens are blinded, unblinded and stored in the visitor's browser. Its end-to-end tests run against a stub scanner and a stub wallet, labeled as such in `web/e2e/stack.ts` |
 | Demo payer | When used, a real testnet payment from Fare's own `fare-wallet`, not the visitor's. The page says so on every payment |
-| Hosting | Not yet. `deploy/` sets up one VPS behind Caddy (owner decision D2). Until it is up, each testnet run starts the stack on a GitHub runner and stops it after |
+| Hosting | https://fare.moonrider.online: one VPS behind Caddy, set up with `deploy/` (owner decision D2). Answers there are simulated until the host has a model key |
 | Explorer screenshots | Not yet added |
 
 ## Threat model

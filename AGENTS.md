@@ -43,7 +43,7 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 | Failure paths, testnet | Oct 26 ([run](https://github.com/abdoulore/fare/actions/runs/40098320054)): paid (+4, tx `b01a1fc0...a4df`, 100 tokens, a call served), underpaid (+5, tx `0c3e538b...058d`, no signatures), paid twice (+6, txs `60d3f691...ebf3` and `d3529ffb...a652`, 200000 zat recorded, still exactly 100 tokens). A watch-only verifier set up from the published incoming viewing key alone listed all four payments by index. Every SPEC failure-path row names its proving test. |
 | Demo viewing key | Published in README (owner approved Oct 26). |
 | `web/` (TypeScript, React) | Built Oct 24. `/`, `/try`, `/server`, `/proof`, `/how`. Tokens blinded, unblinded and stored (IndexedDB) in the browser through `sdk/src/core.ts`. 9 Vitest tests; 22 Playwright tests on a local stack (stub scanner and wallet): the whole buyer flow, replay, underpaid, unlisted key, expired, model failure, no third-party requests, 375 px layout, keyboard, axe WCAG 2.1 AA in both colour schemes. |
-| Hosting | `deploy/` ready (Caddy, systemd, `setup.sh`). Not yet deployed: needs a VPS and a domain from the owner. |
+| Hosting | Live at https://fare.moonrider.online (Oct 24), DNS only, Caddy in front. Checked from outside: the four health routes, CORS for the site only, the 402 with the published key, no third-party requests. The hosted scanner, from the viewing key alone, listed the earlier payments +0 to +6, so new purchases start at +7. A paid hosted run is still to do. |
 
 ## Gates
 

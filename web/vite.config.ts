@@ -1,6 +1,7 @@
 // Static build. Every asset, font included, is served from this origin (invariant 12).
 // The Content-Security-Policy names this origin plus the API, issuer and payer URLs
-// given at build time, and nothing else.
+// given at build time, and nothing else. frame-ancestors only works as a response header,
+// so the server sets it (deploy/Caddyfile), not this meta tag.
 
 import { fileURLToPath } from 'node:url';
 
@@ -23,7 +24,6 @@ export function csp(env: Record<string, string>): string {
     "font-src 'self'",
     "img-src 'self'",
     `connect-src 'self' ${[...new Set(connect)].join(' ')}`.trim(),
-    "frame-ancestors 'none'",
     "base-uri 'none'",
     "form-action 'none'",
   ].join('; ');

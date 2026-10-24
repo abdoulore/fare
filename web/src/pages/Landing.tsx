@@ -43,7 +43,7 @@ export function Landing() {
             <dd className="mono">{stats?.redeemed ?? '–'}</dd>
             <dt>Replays refused</dt>
             <dd className="mono">{stats?.refused.token_reused ?? '–'}</dd>
-            <dt>Link between them</dt>
+            <dt>Shared identifier</dt>
             <dd>none</dd>
           </dl>
           <p>

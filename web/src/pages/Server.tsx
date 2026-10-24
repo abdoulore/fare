@@ -40,7 +40,9 @@ export function Server() {
     <>
       <h1>What the server sees</h1>
       <p className="lede">
-        The issuer knows purchases. The API knows calls. Nothing joins them: no shared id, table or log. These are the live counts from the demo services.
+        The issuer sees purchases: payment status and blinded requests. The API sees tokens and calls. They share no id, table or log, and blind signatures keep a
+        token from being matched to the purchase that paid for it. Network metadata can still be correlated: see below. These are the live counts from the demo
+        services.
       </p>
       {error && <p className="refusal" role="status">{error}</p>}
 
@@ -136,6 +138,7 @@ export function Server() {
           <li><b>IP and timing.</b> An order and a first call from one address, close in time, can be correlated. Use Tor or a proxy if that matters.</li>
           <li><b>A small set.</b> With few purchases under a key, a token hides among few others. The dots above are the whole set.</li>
           <li><b>Request content.</b> The API reads what you ask, and so does the model provider when answers are real.</li>
+          <li><b>One operator.</b> This demo runs the issuer and the API on one server, so whoever runs it sees the network side of both.</li>
           <li><b>The demo payer.</b> When Fare's demo wallet pays, Fare runs the payer and sees which purchase address it paid. Pay from your own wallet to avoid that.</li>
         </ul>
       </section>
