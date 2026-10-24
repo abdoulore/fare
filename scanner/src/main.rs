@@ -25,7 +25,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    /// Create a merchant. Generates a fresh seed unless --ufvk is given.
+    /// Create a merchant. Generates a fresh seed unless --ufvk or --uivk is given.
     Init {
         #[arg(long, default_value = "main")]
         network: String,
@@ -33,8 +33,12 @@ enum Cmd {
         #[arg(long)]
         server: Option<String>,
         /// Use an existing unified full viewing key instead of generating a seed.
-        #[arg(long)]
+        #[arg(long, conflicts_with = "uivk")]
         ufvk: Option<String>,
+        /// Watch-only: verify payments with a published unified incoming viewing key.
+        /// Mints nothing; payments show by diversifier index.
+        #[arg(long)]
+        uivk: Option<String>,
         /// Height to start scanning from. Defaults to the current chain tip.
         #[arg(long)]
         birthday: Option<u64>,
@@ -95,8 +99,8 @@ enum Cmd {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.cmd {
-        Cmd::Init { network, server, ufvk, birthday, confirmations } => {
-            init(&cli.dir, &network, server, ufvk, birthday, confirmations).await
+        Cmd::Init { network, server, ufvk, uivk, birthday, confirmations } => {
+            init(&cli.dir, &network, server, ufvk, uivk, birthday, confirmations).await
         }
         Cmd::Mint { zec, label } => mint(&cli.dir, &zec, label).await,
         Cmd::Scan { from, mempool, check_transparent } => scan(&cli.dir, from, mempool, check_transparent).await,
@@ -118,8 +122,12 @@ async fn main() -> Result<()> {
         Cmd::ViewingKey => {
             let state = store::load(&cli.dir)?;
             let net = keys::parse_network(&state.merchant.network)?;
-            let ufvk = keys::decode_ufvk(&net, &state.merchant.ufvk)?;
-            println!("{}", keys::encode_uivk(&net, &ufvk)?);
+            if keys::is_watch_only(&net, &state.merchant.ufvk) {
+                println!("{}", state.merchant.ufvk);
+            } else {
+                let ufvk = keys::decode_ufvk(&net, &state.merchant.ufvk)?;
+                println!("{}", keys::encode_uivk(&net, &ufvk)?);
+            }
             eprintln!();
             eprintln!("This key reveals every incoming payment to this account: amount, height, address index.");
             eprintln!("It cannot spend, and it reveals nothing about tokens or API calls.");
@@ -134,6 +142,7 @@ async fn init(
     network: &str,
     server: Option<String>,
     ufvk_arg: Option<String>,
+    uivk_arg: Option<String>,
     birthday: Option<u64>,
     confirmations: u64,
 ) -> Result<()> {
@@ -154,22 +163,34 @@ async fn init(
         }
     };
 
-    let (ufvk, seed_file) = match ufvk_arg {
-        Some(s) => (keys::decode_ufvk(&net, &s)?, None),
-        None => {
+    let (stored_key, seed_file) = match (ufvk_arg, uivk_arg) {
+        (Some(s), _) => {
+            let ufvk = keys::decode_ufvk(&net, &s)?;
+            keys::viewing_keys(&ufvk)?;
+            (ufvk.encode(&net).map_err(|e| anyhow!("cannot encode viewing key: {e:?}"))?, None)
+        }
+        (None, Some(s)) => {
+            // Checked here so a bad key fails at init, not at the first scan.
+            keys::incoming_key(&net, &s)?;
+            if !keys::is_watch_only(&net, &s) {
+                bail!("--uivk takes an incoming viewing key; pass a full viewing key with --ufvk");
+            }
+            (s, None)
+        }
+        (None, None) => {
             let mnemonic = keys::generate_mnemonic()?;
             let seed = mnemonic.to_seed("");
             let ufvk = keys::ufvk_from_seed(&net, &seed)?;
             let path = store::write_seed(dir, mnemonic.phrase())?;
-            (ufvk, Some(path))
+            (ufvk.encode(&net).map_err(|e| anyhow!("cannot encode viewing key: {e:?}"))?, Some(path))
         }
     };
-    keys::viewing_keys(&ufvk)?;
+    let watch_only = keys::is_watch_only(&net, &stored_key);
 
     let state = State::new(Merchant {
         network: net_name.to_owned(),
         server: server.clone(),
-        ufvk: ufvk.encode(&net).map_err(|e| anyhow!("cannot encode viewing key: {e:?}"))?,
+        ufvk: stored_key,
         birthday_height: birthday,
         next_index: PURCHASE_INDEX_BASE,
         required_confirmations: confirmations.max(1),
@@ -181,6 +202,9 @@ async fn init(
     println!("  server         {server}");
     println!("  birthday       {birthday}");
     println!("  confirmations  {}", confirmations.max(1));
+    if watch_only {
+        println!("  mode           watch-only: verifies payments, mints nothing");
+    }
     if let Some(path) = seed_file {
         println!();
         println!("Seed phrase written to {}", path.display());
@@ -242,20 +266,40 @@ async fn scan(dir: &Path, from: Option<u64>, mempool: bool, check_transparent: b
     Ok(())
 }
 
+fn payment_line(pay: &store::Payment, tip: u64) -> String {
+    let at = match pay.height {
+        Some(h) => format!("height {h}, {} conf", store::confirmations(h, tip)),
+        None => "mempool".to_string(),
+    };
+    let leaky = if pay.transparent_inputs > 0 { "  [funded from transparent inputs]" } else { "" };
+    format!("{} ZEC  {:?}  {}  {}{leaky}", format_zec(pay.value_zat), pay.pool, at, pay.txid)
+}
+
+/// `+N` for a purchase index, otherwise the raw diversifier index (a wallet address).
+fn index_label(diversifier_index: &str) -> String {
+    match diversifier_index.parse::<u128>() {
+        Ok(j) if j >= u128::from(PURCHASE_INDEX_BASE) => format!("+{}", j - u128::from(PURCHASE_INDEX_BASE)),
+        Ok(j) => format!("wallet {j}"),
+        Err(_) => diversifier_index.to_string(),
+    }
+}
+
 fn print_status(state: &State, tip: u64) {
     let req = state.merchant.required_confirmations;
-    if state.purchases.is_empty() {
-        println!("No purchases yet. Run `fare-scanner mint --zec 0.001`.");
+    if state.purchases.is_empty() && state.unattributed.is_empty() {
+        println!("No purchases or payments yet.");
         return;
     }
-    println!("{:<18} {:<8} {:>12} {:>12}  STATUS", "PURCHASE", "INDEX", "PRICE", "RECEIVED");
+    if !state.purchases.is_empty() {
+        println!("{:<34} {:<8} {:>12} {:>12}  STATUS", "PURCHASE", "INDEX", "PRICE", "RECEIVED");
+    }
     for p in &state.purchases {
         let mut status = p.status(tip, req).label();
         if p.leaky_funding() {
             status.push_str("  [funded from transparent inputs]");
         }
         println!(
-            "{:<18} {:<8} {:>12} {:>12}  {}",
+            "{:<34} {:<8} {:>12} {:>12}  {}",
             p.id,
             format!("+{}", p.index - PURCHASE_INDEX_BASE),
             format_zec(p.price_zat),
@@ -263,16 +307,24 @@ fn print_status(state: &State, tip: u64) {
             status
         );
         for pay in &p.payments {
-            let at = match pay.height {
-                Some(h) => format!("height {h}, {} conf", store::confirmations(h, tip)),
-                None => "mempool".to_string(),
-            };
-            println!("    {} ZEC  {:?}  {}  {}", format_zec(pay.value_zat), pay.pool, at, pay.txid);
+            println!("    {}", payment_line(pay, tip));
         }
     }
     if !state.unattributed.is_empty() {
+        let watch_only = keys::parse_network(&state.merchant.network)
+            .map(|n| keys::is_watch_only(&n, &state.merchant.ufvk))
+            .unwrap_or(false);
         println!();
-        println!("{} payment(s) to this key at non-purchase addresses (never issue tokens).", state.unattributed.len());
+        if watch_only {
+            println!("Payments to this key by diversifier index (watch-only: a verifier sees them, never issues tokens):");
+        } else {
+            println!("Payments to this key at addresses no purchase owns (they never issue tokens):");
+        }
+        let mut rows: Vec<_> = state.unattributed.iter().collect();
+        rows.sort_by_key(|u| u.diversifier_index.parse::<u128>().unwrap_or(u128::MAX));
+        for u in rows {
+            println!("  {:<10} {}", index_label(&u.diversifier_index), payment_line(&u.payment, tip));
+        }
     }
 }
 

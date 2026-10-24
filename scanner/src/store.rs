@@ -13,7 +13,8 @@ use crate::scan::{Detection, Pool};
 pub struct Merchant {
     pub network: String,
     pub server: String,
-    /// Unified full viewing key. Never the seed.
+    /// Unified full viewing key, or a unified incoming viewing key for a watch-only
+    /// verifier. Never the seed.
     pub ufvk: String,
     pub birthday_height: u64,
     pub next_index: u64,

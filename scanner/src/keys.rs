@@ -3,7 +3,7 @@
 use anyhow::{anyhow, bail, Result};
 use orchard::keys::{FullViewingKey, IncomingViewingKey, Scope};
 use zcash_keys::address::UnifiedAddress;
-use zcash_keys::keys::{UnifiedFullViewingKey, UnifiedSpendingKey};
+use zcash_keys::keys::{UnifiedFullViewingKey, UnifiedIncomingViewingKey, UnifiedSpendingKey};
 use zcash_protocol::consensus::Network;
 use zip32::{AccountId, DiversifierIndex};
 
@@ -85,6 +85,26 @@ pub fn decode_orchard_receiver(network: &Network, s: &str) -> Result<orchard::Ad
 /// The unified incoming viewing key to publish for the demo account. It reveals incoming
 /// payments to this account only: amounts, heights, diversifier indices. It cannot spend
 /// and it reveals nothing about tokens or calls.
+/// The external Orchard incoming viewing key from a stored key: a unified full viewing
+/// key (a merchant) or a unified incoming viewing key (watch-only, such as a judge holding
+/// the published demo key). Both give the same purchase addresses and detect the same
+/// payments.
+pub fn incoming_key(network: &Network, s: &str) -> Result<IncomingViewingKey> {
+    if let Ok(ufvk) = decode_ufvk(network, s) {
+        return Ok(viewing_keys(&ufvk)?.ivk);
+    }
+    let uivk = UnifiedIncomingViewingKey::decode(network, s)
+        .map_err(|e| anyhow!("not a unified viewing key for this network: {e:?}"))?;
+    uivk.orchard()
+        .clone()
+        .ok_or_else(|| anyhow!("viewing key has no Orchard component, so it cannot see Ironwood payments"))
+}
+
+/// True when the stored key is incoming-only: it can verify payments but mints nothing.
+pub fn is_watch_only(network: &Network, s: &str) -> bool {
+    decode_ufvk(network, s).is_err()
+}
+
 pub fn encode_uivk(network: &Network, ufvk: &UnifiedFullViewingKey) -> Result<String> {
     ufvk.to_unified_incoming_viewing_key()
         .encode(network)

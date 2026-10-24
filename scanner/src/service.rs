@@ -33,8 +33,7 @@ pub struct Fetched {
 
 pub fn incoming_key(state: &State) -> Result<IncomingViewingKey> {
     let net = keys::parse_network(&state.merchant.network)?;
-    let ufvk = keys::decode_ufvk(&net, &state.merchant.ufvk)?;
-    Ok(keys::viewing_keys(&ufvk)?.ivk)
+    keys::incoming_key(&net, &state.merchant.ufvk)
 }
 
 /// Reads blocks `from..=tip` and, if asked, one mempool snapshot. Wholesale requests only.
@@ -121,10 +120,12 @@ pub fn mint(state: &mut State, price_zat: u64, label: Option<String>, created_he
         bail!("price must be between 1 zatoshi and the ZEC supply");
     }
     let net = keys::parse_network(&state.merchant.network)?;
-    let ufvk = keys::decode_ufvk(&net, &state.merchant.ufvk)?;
-    let vk = keys::viewing_keys(&ufvk)?;
+    if keys::is_watch_only(&net, &state.merchant.ufvk) {
+        bail!("watch-only: an incoming viewing key verifies payments but does not mint purchases");
+    }
+    let ivk = keys::incoming_key(&net, &state.merchant.ufvk)?;
     let index = state.allocate_index();
-    let address = keys::encode_shielded_only(&net, keys::purchase_address(&vk.ivk, index))?;
+    let address = keys::encode_shielded_only(&net, keys::purchase_address(&ivk, index))?;
     let pay_uri = format!("zcash:{address}?amount={}", format_zec(price_zat));
     let purchase = Purchase {
         id: random_id()?,
