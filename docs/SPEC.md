@@ -113,10 +113,10 @@ The run: `testnet-canary.yml` with `pay: true` and the payer's birthday. It rebu
 
 **Pass:**
 
-- [ ] The run is green: `check` exits 0.
-- [ ] `CANARY PASS` names the txid `fare-wallet` printed, at diversifier index base+0.
-- [ ] `underpay` shows `underpaid (short 0.0005 ZEC)` and never `paid`.
-- [ ] The scan summary says `No transaction lookups` and the pay URI has no memo.
+- [x] The run is green: `check` exits 0 ([run 4](https://github.com/abdoulore/fare/actions/runs/40084407257)).
+- [x] `CANARY PASS` names the txid `fare-wallet` printed, at diversifier index base+0: `fd1e9ee3f90c0e3bd8bf874e86352ab8fb085158190c5242a27e0afa623af9d9`.
+- [x] `underpay` shows `underpaid (short 0.0005 ZEC)` and never `paid`: `0346de58cdaa73d7285e7e91448effa2c437978b44cfdf1bc72a4cf9b866652b`.
+- [x] The scan summary says `No transaction lookups` and the pay URI has no memo.
 - [ ] A testnet explorer shows the transaction with no visible amount or address; screenshot it for the README.
 
 **Fail, and what it means:**
@@ -134,7 +134,7 @@ One gate, five build days, submission with a buffer: nothing after the canary st
 
 - [x] Scanner: mint, scan, status, viewing key; 11 tests green. Token canary: 100 tokens issued, verified, 11 of 11 refusal and unlinkability checks
 - [x] Oct 24: `fare-scanner check`, `fare-wallet` (headless testnet payer), canary and wallet workflows, CI
-- [ ] Testnet canary passes (see Canary)
+- [x] Testnet canary passes (see Canary): [run 4](https://github.com/abdoulore/fare/actions/runs/40084407257)
 
 **Oct 24: issuance**
 

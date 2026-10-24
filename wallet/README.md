@@ -62,7 +62,7 @@ The wallet is built without the `transparent-inputs` feature, so it cannot spend
 
 ## Notes still in Orchard
 
-After NU6.3, Orchard accepts no new value. A payment funded from Orchard notes crosses the turnstile into Ironwood. `zcash_client_backend` 0.25 plans such payments itself (ZIP 318 canonical crossings), so `pay` has no separate migrate step. `balance` shows where the funds sit. Not yet observed on chain.
+After NU6.3, Orchard accepts no new value. A payment funded from Orchard notes crosses the turnstile into Ironwood. `zcash_client_backend` 0.25 plans such payments itself (ZIP 318 canonical crossings), so `pay` has no separate migrate step. `balance` shows where the funds sit. Not exercised yet: the canary payer's funds were already in Ironwood.
 
 ## What is real
 
@@ -70,7 +70,7 @@ After NU6.3, Orchard accepts no new value. A payment funded from Orchard notes c
 | --- | --- |
 | URI checks, seed handling, mainnet refusal | Real, tested offline |
 | Insufficient funds | Real: tested against a wallet that has scanned empty compact blocks through the same cache sync uses |
-| Sync, balance, address, pay on testnet | Real code; runs on a GitHub runner. Not yet run against the chain |
+| Sync, balance, address, pay on testnet | Real: paid both canary purchases on Oct 24 ([run 4](https://github.com/abdoulore/fare/actions/runs/40084407257), tx `fd1e9ee3f90c0e3bd8bf874e86352ab8fb085158190c5242a27e0afa623af9d9`) |
 
 ## Tests
 

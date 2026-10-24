@@ -34,13 +34,17 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 | Part | State |
 | --- | --- |
 | `scanner/` (Rust) | Built. 19 tests green, clippy clean. `check` makes the canary fail when it fails. |
-| `wallet/` (Rust) | Built Oct 24. 26 tests green, clippy clean. Not yet run against the chain. |
+| `wallet/` (Rust) | Built Oct 24. 26 tests green, clippy clean. Paid both canary purchases on testnet. |
 | `token-canary/` (Node) | Passed 11 of 11 checks with 100 tokens. Native signing measured. |
-| Issuer, origin, SDK, demo API, panel | Not started. Blocked on gate 1. |
+| Issuer, origin, SDK, demo API, panel | Not started. Gate 1 passed; next up. |
 
 ## Gates
 
-1. **Zcash canary, testnet. Open.** The owner dispatches `.github/workflows/testnet-canary.yml` with `pay: true`: it pays both purchases from `fare-wallet`, scans and runs `fare-scanner check`. Pass: a green run whose log shows `CANARY PASS` with the payer's txid, `underpay` staying `underpaid`, and `check` exiting 0. Record the run URL and txid here when it passes. Until then, do not start issuer, origin or SDK work. Fixing scanner or wallet bugs the canary reveals is allowed.
+1. **Zcash canary, testnet. Passed Oct 24.** `.github/workflows/testnet-canary.yml` with `pay: true`, [run 4](https://github.com/abdoulore/fare/actions/runs/40084407257):
+   - `canary` paid by `fare-wallet` in tx `fd1e9ee3f90c0e3bd8bf874e86352ab8fb085158190c5242a27e0afa623af9d9` at height 4,535,557. `CANARY PASS` names the same txid, matched by diversifier index base+0 from compact blocks only.
+   - `underpay` paid 0.0005 in tx `0346de58cdaa73d7285e7e91448effa2c437978b44cfdf1bc72a4cf9b866652b` at height 4,535,562 and stays `underpaid (short 0.0005 ZEC)`.
+   - `fare-scanner check` printed `CHECK PASS`. Scan: 8 blocks, 9 Ironwood actions, 0 unattributed, transparent inputs checked, no transaction lookups.
+   - Payer: birthday 4,533,526, funds in Ironwood, fee 0.0001 per payment, one transaction each.
 2. **Token canary.** Passed Oct 23 (`token-canary/canary.mjs`).
 
 ## Locked decisions

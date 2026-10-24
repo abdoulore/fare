@@ -20,10 +20,10 @@ Built for ZECATHON 2026, Shielded Payments track. Runs on Zcash testnet.
 
 | Part | State |
 | --- | --- |
-| `scanner/` (Rust) | Built, 19 tests green, testnet canary pending |
-| `wallet/` (Rust) | Built, 26 tests green, not yet run against the chain |
+| `scanner/` (Rust) | Built, 19 tests green, [testnet canary passed](https://github.com/abdoulore/fare/actions/runs/40084407257) Oct 24 |
+| `wallet/` (Rust) | Built, 26 tests green, paid the canary purchases on testnet |
 | `token-canary/` (Node) | Passed: 100 tokens, 11 of 11 checks |
-| Issuer (TypeScript) | Oct 24, after the canary |
+| Issuer (TypeScript) | Next, now that the canary has passed |
 | Origin middleware and client SDK (TypeScript) | Oct 24 to 25 |
 | Demo API, agent, server-view panel | Oct 25 |
 
