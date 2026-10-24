@@ -10,3 +10,5 @@ fare-wallet-data/
 *.sqlite
 issuer-data/
 **/issuer-data/
+origin-data/
+**/origin-data/

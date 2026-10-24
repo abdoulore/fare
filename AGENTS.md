@@ -37,8 +37,9 @@ Judges score four things. **Privacy:** does it actually preserve privacy; leaks 
 | `wallet/` (Rust) | Built Oct 24. 26 tests green, clippy clean. Paid both canary purchases on testnet. |
 | `token-canary/` (Node) | Passed 11 of 11 checks with 100 tokens. Native signing measured. |
 | `issuer/` (TypeScript) | Built Oct 24. 19 tests green, typecheck clean. Native signing, 7-day epoch keys. |
-| `sdk/` (TypeScript) | Built Oct 24. 11 tests green against the real issuer with a stub scanner. |
-| Origin, demo API, panel | Not started. Oct 25. |
+| `sdk/` (TypeScript) | Built Oct 24. 12 tests green against the real issuer with a stub scanner. Follows key rotation through the directory (Oct 25). |
+| `origin/` (TypeScript) | Built Oct 25. 11 tests green, end to end with the real issuer and SDK. |
+| Demo API, panel | Oct 25, in progress. |
 
 ## Gates
 
@@ -106,11 +107,12 @@ fare/
     src/store.ts       purchases: id, epoch, blinded requests, pay URI, expiry
     src/scanner.ts     client for fare-scanner serve
   sdk/                 TypeScript client: pin, 402 handling, order, collect, spend
+  origin/              TypeScript middleware: 402 challenge, invariant 9 checks, spent-nonce store
   token-canary/        Node: Privacy Pass proof (canary.mjs, native-sign.mjs)
   .github/workflows/   ci.yml, testnet-canary.yml, testnet-wallet.yml, testnet-serve.yml
 ```
 
-Planned, create as needed: `origin/` (TypeScript: 402 middleware, verify, spent-nonce store), `demo/` (demo API and agent loop), `panel/` (server-view panel).
+Planned, create as needed: `demo/` (demo API and agent loop), `panel/` (server-view panel).
 
 ## Commands
 
@@ -138,6 +140,7 @@ cd issuer && npm ci && npm test && npm run typecheck
 npm start                        # ISSUER_LISTEN, ISSUER_DATA, SCANNER_URL
 
 cd sdk && npm ci --prefix ../issuer && npm ci && npm test
+cd origin && npm ci --prefix ../issuer && npm ci --prefix ../sdk && npm ci && npm test
 
 cd token-canary
 npm install
@@ -154,7 +157,7 @@ Non-negotiable. Each one needs a test. Extend the tests, never weaken them.
 3. No memos. Pay URIs are exactly `zcash:<UA>?amount=<price>`. Payments are matched by diversifier index.
 4. Purchase addresses carry an Orchard-type receiver only (no transparent, no Sapling). A fresh index per purchase, counted up from `PURCHASE_INDEX_BASE` (2^40), never reused.
 5. Fixed pack sizes. The issuer rejects any other N.
-6. One issuer key per epoch, published at `/.well-known/private-token-issuer-directory`. The SDK pins it and aborts on any other key. Never per-user or per-purchase keys.
+6. One issuer key per epoch, published at `/.well-known/private-token-issuer-directory`. The SDK pins it and aborts on any key the directory does not list. On rotation it re-reads the directory and follows only a key listed there. Never per-user or per-purchase keys.
 7. The issuer never sees tokens; the origin never sees purchases. No shared table, id or log between them. The panel shows both sides with no join key.
 8. Never log client IPs, user agents or request timing next to purchase ids or token nonces. Each side keeps only what it needs.
 9. Tokens bind to a challenge with an empty redemption context and the origin's name. The origin checks key id, challenge digest, signature and spent set, and only then serves.
