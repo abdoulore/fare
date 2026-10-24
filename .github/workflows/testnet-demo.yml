@@ -1,0 +1,123 @@
+name: Testnet demo
+
+# The whole stack on testnet: scanner sidecar, issuer, origin and demo API. The agent
+# buys a pack on the first 402, pays it with fare-wallet, makes CALLS calls with one
+# token each, then replays a token and expects 401 token_reused. Answers are real when
+# the repository secret ANTHROPIC_API_KEY is set, simulated (and labeled so) otherwise.
+#
+# Merchant state and the payer wallet database share their caches with
+# testnet-serve.yml, so no address index is ever minted twice.
+
+on:
+  workflow_dispatch:
+    inputs:
+      payer_birthday:
+        description: "Payer wallet birthday height"
+        required: true
+      calls:
+        description: "Calls the agent makes"
+        required: false
+        default: "5"
+
+permissions:
+  contents: read
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    env:
+      SERVER: https://testnet.zec.rocks:443
+      PAYER_BIRTHDAY: ${{ inputs.payer_birthday }}
+      CALLS: ${{ inputs.calls }}
+      SCANNER: ./scanner/target/release/fare-scanner
+      WALLET: ./wallet/target/release/fare-wallet
+    steps:
+      - name: Validate inputs
+        run: |
+          case "$PAYER_BIRTHDAY" in ''|*[!0-9]*) echo "payer_birthday must be a block height"; exit 1;; esac
+          case "$CALLS" in ''|*[!0-9]*) echo "calls must be a number"; exit 1;; esac
+          [ "$CALLS" -ge 1 ] && [ "$CALLS" -le 99 ] || { echo "calls must be 1 to 99"; exit 1; }
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            scanner
+            wallet
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build
+        run: |
+          cargo build --release --locked --manifest-path scanner/Cargo.toml
+          cargo build --release --locked --manifest-path wallet/Cargo.toml
+          for p in issuer sdk origin demo; do npm ci --prefix "$p"; done
+
+      - name: Restore merchant state
+        uses: actions/cache/restore@v4
+        with:
+          path: fare-data
+          key: fare-merchant-test-${{ github.run_id }}
+          restore-keys: fare-merchant-test-
+      - name: Restore payer wallet database
+        uses: actions/cache@v4
+        with:
+          path: wallet/fare-wallet-data
+          key: fare-wallet-db-test-${{ inputs.payer_birthday }}-${{ github.run_id }}
+          restore-keys: fare-wallet-db-test-${{ inputs.payer_birthday }}-
+      - name: Merchant
+        env:
+          FARE_TESTNET_UFVK: ${{ secrets.FARE_TESTNET_UFVK }}
+        run: |
+          if [ ! -f fare-data/state.json ]; then
+            test -n "$FARE_TESTNET_UFVK" || { echo "secret FARE_TESTNET_UFVK is not set"; exit 1; }
+            $SCANNER init --network test --server "$SERVER" --ufvk "$FARE_TESTNET_UFVK"
+            $SCANNER mint --zec 0.001 --label canary
+            $SCANNER mint --zec 0.001 --label underpay
+          fi
+      - name: Payer wallet
+        env:
+          FARE_PAYER_SEED: ${{ secrets.FARE_PAYER_SEED }}
+        run: |
+          test -n "$FARE_PAYER_SEED" || { echo "secret FARE_PAYER_SEED is not set"; exit 1; }
+          $WALLET --dir wallet/fare-wallet-data --server "$SERVER" init --birthday "$PAYER_BIRTHDAY"
+          $WALLET --dir wallet/fare-wallet-data --server "$SERVER" sync
+          $WALLET --dir wallet/fare-wallet-data balance
+
+      - name: Start scanner, issuer and demo API
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          $SCANNER serve --interval 15 > serve.log 2>&1 &
+          (cd issuer && node src/main.ts > ../issuer.log 2>&1) &
+          for _ in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:8787/.well-known/private-token-issuer-directory && break; sleep 1; done
+          (cd demo && ISSUER_DATA=../issuer/issuer-data node src/main.ts > ../demo.log 2>&1) &
+          for _ in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:8080/ && break; sleep 1; done
+          curl -sf http://127.0.0.1:8080/ | jq .
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8080/v1/ask -d '{"prompt":"hi"}')
+          echo "call without a token -> $code"
+          test "$code" = 402
+
+      - name: Agent
+        env:
+          FARE_PAYER_SEED: ${{ secrets.FARE_PAYER_SEED }}
+          FARE_WALLET: ../wallet/target/release/fare-wallet
+          WALLET_DIR: ../wallet/fare-wallet-data
+          LIGHTWALLETD: https://testnet.zec.rocks:443
+        run: cd demo && timeout 1500 node src/agent.ts
+
+      - name: Panel and logs
+        if: always()
+        run: |
+          echo "--- panel stats"
+          curl -s http://127.0.0.1:8790/panel/stats | jq . || true
+          echo "--- serve log"; cat serve.log || true
+          echo "--- issuer log"; cat issuer.log || true
+          echo "--- demo log"; cat demo.log || true
+
+      - name: Save merchant state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: fare-data
+          key: fare-merchant-test-${{ github.run_id }}
