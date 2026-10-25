@@ -49,3 +49,30 @@ test('/app fits 375 px through a whole purchase', async ({ page }) => {
   await expect(page.getByTestId('replay-refused')).toBeVisible();
   expect(await width(), 'with tokens and a refusal').toBeLessThanOrEqual(375);
 });
+
+test('the live postmark inscriptions fit their arcs in the real font', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('img', { name: /^Live check/ })).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  const overflow = await page.evaluate(() =>
+    [...document.querySelectorAll<SVGTextElement>('.postmark text.inscription')].map((t) => ({ text: t.textContent, len: t.getComputedTextLength(), arc: Math.PI * 46 - 20 })).filter((x) => x.len > x.arc),
+  );
+  expect(overflow).toEqual([]);
+});
+
+for (const path of ['/developers', '/proof']) {
+  test(`${path} tables and code fit 375 px without hidden overflow`, async ({ page }) => {
+    await page.goto(path);
+    await expect(page.locator('h1')).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    const clipped = await page.evaluate(() =>
+      [...document.querySelectorAll('main table')].filter((t) => t.getBoundingClientRect().right > window.innerWidth + 1 || t.scrollWidth > t.clientWidth + 1).map((t) => t.textContent?.slice(0, 40)),
+    );
+    expect(clipped).toEqual([]);
+    for (const block of await page.locator('.code-block').all()) {
+      const copy = await block.locator('button').boundingBox();
+      const code = await block.locator('pre').boundingBox();
+      expect(copy && code && copy.y + copy.height <= code.y + 1).toBe(true);
+    }
+  });
+}

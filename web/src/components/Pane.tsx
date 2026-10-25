@@ -1,19 +1,30 @@
-// A pane of stamps: one per token issued under a key. Spent ones are struck through. Every
-// stamp looks the same, which is the anonymity set.
+// Panes of stamps: one sheet of 100 per pack issued under a key, spent stamps cancelled.
+// Every stamp looks the same, which is the anonymity set.
 
-const MAX = 1000;
+const PER_SHEET = 100;
+const MAX_SHEETS = 10;
 
-export function Pane({ issued, spent, dev = false, label }: { issued: number; spent: number; dev?: boolean; label?: string }) {
-  const shown = Math.min(issued, MAX);
+export function Pane({ issued, spent, large = false, label }: { issued: number; spent: number; large?: boolean; label?: string }) {
+  const sheets = Math.ceil(issued / PER_SHEET);
+  const shownSheets = Math.min(sheets, MAX_SHEETS);
+  const shown = Math.min(issued, shownSheets * PER_SHEET);
   const struck = Math.min(spent, shown);
   return (
     <div>
-      <div className={`pane${dev ? ' dev' : ''}`} role="img" aria-label={label ?? `${issued} tokens issued under this key, ${spent} spent`} data-testid="dots">
-        {Array.from({ length: shown }, (_, i) => (
-          <i key={i} className={i < struck ? 'spent' : undefined} />
+      <div className={`pane-set${large ? ' large' : ''}`} role="img" aria-label={label ?? `${issued} tokens issued under this key, ${spent} spent`} data-testid="dots">
+        {Array.from({ length: shownSheets }, (_, s) => (
+          <div className="pane" key={s}>
+            {Array.from({ length: Math.min(PER_SHEET, shown - s * PER_SHEET) }, (_, i) => (
+              <i key={i} className={s * PER_SHEET + i < struck ? 'spent' : undefined} />
+            ))}
+          </div>
         ))}
       </div>
-      {issued > MAX && <p className="muted">Showing {MAX} of {issued}.</p>}
+      {sheets > MAX_SHEETS && (
+        <p className="muted">
+          Showing {MAX_SHEETS} of {sheets} sheets.
+        </p>
+      )}
     </div>
   );
 }

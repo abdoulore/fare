@@ -395,7 +395,7 @@ export function Use() {
   const lastExchange = exchanges[0];
 
   const probePanel = probe && (
-    <div className="stack" data-testid="probe" aria-live="polite">
+    <div className="stack probe" data-testid="probe" aria-live="polite">
       <div className="row">
         <span className="tag">{probe.code === 0 ? 'no answer' : `${probe.code} Payment Required`}</span>
         {probe.challenge && <span className="tag paid">key matches the published directory</span>}
@@ -617,7 +617,7 @@ export function Use() {
             </form>
             {lastExchange?.replay && lastExchange.kind === 'refused' && (
               <div key={lastExchange.id} className="bounce">
-                <Postmark top="ALREADY CANCELLED" bottom="401 · TOKEN REUSED" center="401" tone="refused" strike size={110} label="Replay refused: this token was already spent" />
+                <Postmark top="ALREADY CANCELLED" bottom="TOKEN REUSED" center="401" tone="refused" strike size={110} label="Replay refused: this token was already spent" />
               </div>
             )}
             {exchanges.length > 0 && (
@@ -669,7 +669,7 @@ export function Use() {
               </span>
             </div>
             <p className="muted">tokens left for this API</p>
-            {tokens > 0 && <Pane issued={sheetSize} spent={sheetSize - tokens} label={`Your sheet: ${tokens} unspent of ${sheetSize}`} />}
+            {tokens > 0 && <Pane large issued={sheetSize} spent={sheetSize - tokens} label={`Your sheet: ${tokens} unspent of ${sheetSize}`} />}
             <p className="mono" data-testid="tokens-total">
               {tokens} unspent
             </p>

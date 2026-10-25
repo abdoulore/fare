@@ -1,6 +1,7 @@
 // /developers: how an API provider adds Fare. Every command and signature here matches the
 // code in this repository; packages install from the repo (pre-release, not on npm).
 
+import { CardTable } from '../components/CardTable.tsx';
 import { CodeBlock } from '../components/CodeBlock.tsx';
 import { Link } from '../router.tsx';
 
@@ -71,22 +72,35 @@ const res = await fare.fetch('https://api.example.com/v1/ask', {
   // fare-wallet pay "$payUri" --max-zec 0.001
 });`;
 
+const REFUSALS: [string, string][] = [
+  ['401 token_reused', 'This token was already spent. Each token works once.'],
+  ['401 bad_signature', 'The token does not verify against the issuer key.'],
+  ['401 unknown_key', 'The token names a key the directory never listed.'],
+  ['401 wrong_challenge', 'The token was issued for another API.'],
+  ['401 expired_epoch', 'The token key has retired.'],
+  ['400 wrong_pack, wrong_count', 'An order for anything but one pack of 100.'],
+  ['400 duplicate_request, malformed_request, unknown_key', 'An order the issuer will not sign.'],
+  ['503 scanner_unavailable', 'The issuer cannot reach its scanner; nothing is guessed.'],
+];
+
 export function Developers() {
   return (
     <>
-      <div className="wrap doc-head dev">
-        <h1>Accept Fare on your API</h1>
-        <p className="lede">
-          Wrap your handler, run an issuer and a scanner beside it, and every call to your API is paid for with a single-use token you can verify but cannot trace to a buyer.
-        </p>
-        <p className="selvage">
-          <span className="dev-rule">Developers</span>
-          <span>Pre-release</span>
-          <span>Zcash testnet</span>
-        </p>
+      <div className="masthead dev">
+        <div className="wrap">
+          <h1>Accept Fare on your API</h1>
+          <p className="lede">
+            Wrap your handler, run an issuer and a scanner beside it, and every call to your API is paid for with a single-use token you can verify but cannot trace to a buyer.
+          </p>
+          <p className="selvage">
+            <span>Developers</span>
+            <span>Pre-release</span>
+            <span>Zcash testnet</span>
+          </p>
+        </div>
       </div>
 
-      <div className="wrap doc">
+      <div className="wrap doc dev">
         <nav className="toc" aria-label="On this page">
           <ol>
             {SECTIONS.map(([id, label]) => (
@@ -101,34 +115,18 @@ export function Developers() {
           <section id="parts" aria-labelledby="parts-h">
             <h2 id="parts-h">What you run</h2>
             <p>Three parts, each knowing only what it needs:</p>
-            <div className="scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">Part</th>
-                    <th scope="col">Does</th>
-                    <th scope="col">Knows</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <th scope="row">Origin middleware</th>
-                    <td>Answers unpaid calls with 402 and a price; checks each token's key id, challenge, signature and spent set, then runs your handler.</td>
-                    <td>Tokens and the requests they arrive with. Never a purchase.</td>
-                  </tr>
-                  <tr>
-                    <th scope="row">Issuer</th>
-                    <td>Publishes its key, takes orders of 100 blinded requests, signs them after one confirmation.</td>
-                    <td>Purchases and blinded requests. Never a token.</td>
-                  </tr>
-                  <tr>
-                    <th scope="row">Scanner</th>
-                    <td>Mints a fresh shielded address per purchase and spots payments in compact blocks by address index.</td>
-                    <td>A viewing key. No seed, no memo, no transaction lookups.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <CardTable
+              head={['Part', 'Does', 'Knows']}
+              rowHeader
+              rows={[
+                {
+                  key: 'origin',
+                  cells: ['Origin middleware', "Answers unpaid calls with 402 and a price; checks each token's key id, challenge, signature and spent set, then runs your handler.", 'Tokens and the requests they arrive with. Never a purchase.'],
+                },
+                { key: 'issuer', cells: ['Issuer', 'Publishes its key, takes orders of 100 blinded requests, signs them after one confirmation.', 'Purchases and blinded requests. Never a token.'] },
+                { key: 'scanner', cells: ['Scanner', 'Mints a fresh shielded address per purchase and spots payments in compact blocks by address index.', 'A viewing key. No seed, no memo, no transaction lookups.'] },
+              ]}
+            />
             <p>
               The issuer and the origin share no table, id or log. The only thing they share is the issuer's public key, read from{' '}
               <code>/.well-known/private-token-issuer-directory</code>.
@@ -138,7 +136,7 @@ export function Developers() {
           <section id="quick-start" aria-labelledby="qs-h">
             <h2 id="qs-h">Quick start</h2>
             <p>The packages are pre-release and install from the repository, not from npm. You need Rust, Node 22 and a machine that can reach a Zcash lightwalletd.</p>
-            <CodeBlock code={INSTALL} label="Copy commands" />
+            <CodeBlock code={INSTALL} title="Terminal" label="Copy commands" />
             <p className="muted">
               <code>init</code> without <code>--ufvk</code> writes a seed file: move it offline, the scanner never reads it again. For a whole host with TLS and systemd units, see{' '}
               <a href="https://github.com/abdoulore/fare/blob/main/deploy/README.md">deploy/README.md</a>.
@@ -148,10 +146,10 @@ export function Developers() {
           <section id="your-api" aria-labelledby="api-h">
             <h2 id="api-h">Your API</h2>
             <p>The simplest integration wraps a node:http handler. Your code runs only after the token passed every check.</p>
-            <CodeBlock code={PROTECT} label="Copy example" />
+            <CodeBlock code={PROTECT} title="server.ts" label="Copy example" />
             <h3>Validate before you charge</h3>
             <p>To refuse malformed requests without spending the caller's token, answer the 402 yourself and redeem after validating:</p>
-            <CodeBlock code={REDEEM} label="Copy example" />
+            <CodeBlock code={REDEEM} title="Inside your handler" label="Copy example" />
             <p>
               <code>redeem</code> checks, in order, the key id, the challenge digest, the signature and the spent set, and marks the token spent only when everything passed.
             </p>
@@ -162,7 +160,7 @@ export function Developers() {
             <p>
               The SDK handles the 402, pins the issuer key, blinds and orders a pack, waits for payment, unblinds the tokens and spends one per call. Your agent supplies the payment.
             </p>
-            <CodeBlock code={AGENT} label="Copy example" />
+            <CodeBlock code={AGENT} title="agent.ts" label="Copy example" />
             <p>
               In a browser, <code>sdk/src/core.ts</code> runs the same flow with no Node imports; <Link to="/app">the app</Link> uses it and keeps tokens in IndexedDB.
             </p>
@@ -170,74 +168,51 @@ export function Developers() {
 
           <section id="contract" aria-labelledby="contract-h">
             <h2 id="contract-h">HTTP contract</h2>
-            <div className="scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">Request</th>
-                    <th scope="col">Answer</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="mono">Your API, no token</td>
-                    <td>
+            <CardTable
+              head={['Request', 'Answer']}
+              mono={[0]}
+              rows={[
+                {
+                  key: 'no-token',
+                  cells: [
+                    'Your API, no token',
+                    <>
                       <code>402</code> with <code>WWW-Authenticate: PrivateToken challenge=…, token-key=…</code> and <code>Fare-Offer: {'{"pack":100,"price_zec":"0.001","issuer":"…"}'}</code>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="mono">Your API, with token</td>
-                    <td>
+                    </>,
+                  ],
+                },
+                {
+                  key: 'token',
+                  cells: [
+                    'Your API, with token',
+                    <>
                       <code>Authorization: PrivateToken token="…"</code>. Your handler's answer, or <code>401</code> with one of the refusals below
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="mono">GET /.well-known/private-token-issuer-directory</td>
-                    <td>RFC 9578 directory: the current key, and the previous one during its 24 h grace</td>
-                  </tr>
-                  <tr>
-                    <td className="mono">POST /fare/purchases</td>
-                    <td>
+                    </>,
+                  ],
+                },
+                { key: 'directory', cells: ['GET /.well-known/private-token-issuer-directory', 'RFC 9578 directory: the current key, and the previous one during its 24 h grace'] },
+                {
+                  key: 'post',
+                  cells: [
+                    'POST /fare/purchases',
+                    <>
                       <code>{'{pack, blinded: [100 TokenRequests]}'}</code> → <code>201 {'{purchase_id, pay_uri, expires_at}'}</code>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="mono">GET /fare/purchases/{'{id}'}</td>
-                    <td>
+                    </>,
+                  ],
+                },
+                {
+                  key: 'get',
+                  cells: [
+                    'GET /fare/purchases/{id}',
+                    <>
                       <code>{'{status}'}</code>: pending, in_mempool, confirming, underpaid, expired; once paid, <code>{'{status: "paid", signatures: [100]}'}</code>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                    </>,
+                  ],
+                },
+              ]}
+            />
             <h3>Refusals</h3>
-            <div className="scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">Code</th>
-                    <th scope="col">Means</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ['401 token_reused', 'This token was already spent. Each token works once.'],
-                    ['401 bad_signature', 'The token does not verify against the issuer key.'],
-                    ['401 unknown_key', 'The token names a key the directory never listed.'],
-                    ['401 wrong_challenge', 'The token was issued for another API.'],
-                    ['401 expired_epoch', 'The token key has retired.'],
-                    ['400 wrong_pack, wrong_count', 'An order for anything but one pack of 100.'],
-                    ['400 duplicate_request, malformed_request, unknown_key', 'An order the issuer will not sign.'],
-                    ['503 scanner_unavailable', 'The issuer cannot reach its scanner; nothing is guessed.'],
-                  ].map(([code, means]) => (
-                    <tr key={code}>
-                      <td className="mono">{code}</td>
-                      <td>{means}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <CardTable head={['Code', 'Means']} mono={[0]} rows={REFUSALS.map(([code, means]) => ({ key: code, cells: [code, means] }))} />
           </section>
 
           <section id="operating" aria-labelledby="op-h">

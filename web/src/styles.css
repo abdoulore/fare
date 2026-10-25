@@ -33,7 +33,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --paper: #111216;
-    --sheet: #f4f3ee;
+    --sheet: #f3f4f1;
     --ink: #e9eaee;
     --muted: #a3a8b4;
     --line: #2a2d35;
@@ -160,6 +160,10 @@ textarea { min-height: 88px; resize: vertical; }
 .kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 18px; margin: 8px 0 0; }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .kv.wide { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .kv.wide dt { color: var(--ink); font-weight: 700; margin-top: 12px; }
+}
 .stamp .kv dt { color: var(--sheet-muted); }
 
 /* Status in postal terms. */
@@ -194,22 +198,21 @@ textarea { min-height: 88px; resize: vertical; }
 .bounce { animation: bounce 0.42s ease-in-out; }
 @keyframes bounce { 0%, 100% { transform: none; } 30% { transform: translateX(-8px) rotate(-2deg); } 65% { transform: translateX(6px) rotate(1deg); } }
 
-/* A pane of stamps: one per token under a key, cancelled ones struck through. */
-.pane { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; max-width: 360px; }
+/* Panes of stamps: a sheet of 100 per pack, spent stamps cancelled with postmark bars. */
+.pane-set { display: flex; flex-wrap: wrap; gap: 16px; }
+.pane { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 3px; width: 172px; }
+.pane-set.large .pane { width: min(100%, 340px); gap: 4px; }
 .pane i {
-  --r: 1.6px;
+  --r: 1.4px;
   display: block; aspect-ratio: 5 / 6; background: var(--vermilion);
   -webkit-mask: radial-gradient(var(--r), #0000 97%, #000) round calc(var(--r) * -1) calc(var(--r) * -1) / calc(var(--r) * 3) calc(var(--r) * 3), linear-gradient(#000 0 0) content-box;
   mask: radial-gradient(var(--r), #0000 97%, #000) round calc(var(--r) * -1) calc(var(--r) * -1) / calc(var(--r) * 3) calc(var(--r) * 3), linear-gradient(#000 0 0) content-box;
   padding: calc(var(--r) * 2);
   position: relative;
 }
-.pane i.spent {
-  background:
-    repeating-linear-gradient(-14deg, transparent 0 3px, var(--paper) 3px 4.4px),
-    color-mix(in srgb, var(--vermilion) 38%, var(--paper));
-}
-.pane.dev i { background: var(--ultra); }
+.pane-set.large .pane i { --r: 1.8px; }
+.pane i.spent { background: color-mix(in srgb, var(--vermilion) 62%, var(--paper)); }
+.pane i.spent::after { content: ''; position: absolute; inset: 0; background: url('/cancel.svg') center / 100% 100% no-repeat; }
 
 /* Home: the vermilion sheet margin, perforated along its lower edge. */
 .field { overflow-x: clip; --vermilion: #c2341d; --on-vermilion: #ffffff; --focus: #ffffff; background: var(--vermilion); color: var(--on-vermilion); position: relative; padding: 18px 0 72px; }
@@ -238,7 +241,8 @@ textarea { min-height: 88px; resize: vertical; }
 
 /* Two halves of one sheet, torn along the perforation. */
 .torn { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
-@media (min-width: 860px) { .torn { grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr); } }
+@media (min-width: 860px) { .torn { grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr); } .torn.ledger { grid-template-columns: minmax(0, 1.5fr) 64px minmax(0, 1fr); } }
+td .tag { white-space: nowrap; }
 .torn .half { padding: 4px 0 18px; }
 .torn .seam {
   min-height: 56px; display: grid; place-items: center; color: var(--muted);
@@ -265,7 +269,7 @@ textarea { min-height: 88px; resize: vertical; }
 /* Doors to the three sides of the product. */
 .doors { list-style: none; padding: 0; margin: 0; }
 .doors li { border-top: 1.5px solid var(--ink); padding: 22px 0; display: grid; gap: 6px 32px; grid-template-columns: minmax(0, 1fr); max-width: none; }
-@media (min-width: 760px) { .doors li { grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) auto; align-items: baseline; } }
+@media (min-width: 760px) { .doors li { grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) 10.5rem; align-items: baseline; } .doors .button { justify-self: start; } }
 .doors li:last-child { border-bottom: 1.5px solid var(--ink); }
 .doors h3 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); margin: 0; }
 .doors p { margin: 0; }
@@ -310,36 +314,56 @@ progress::-moz-progress-bar { background: #c2341d; }
 .qr { width: 180px; height: 180px; background: #ffffff; padding: 8px; }
 .qr rect { fill: #1b2232; }
 details.more { border-top: 1px solid var(--line); padding: 12px 0; }
-details.more > summary { cursor: pointer; font-weight: 700; list-style-position: outside; min-height: 32px; }
+details.more > summary { cursor: pointer; font-weight: 700; list-style-position: inside; min-height: 32px; }
+.probe { margin-top: 14px; }
 details.more[open] > summary { margin-bottom: 10px; }
 .confirm { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
-/* Developers and Proof: documents framed by the sheet margin. */
-.doc-head { padding-top: 40px; padding-bottom: 26px; border-bottom: 1.5px solid var(--ink); }
-.doc-head.dev { border-bottom-color: var(--ultra); }
-.doc-head .selvage, .app-head .selvage { color: var(--muted); margin: 18px 0 0; }
+/* Developers and Proof: documents framed by a sheet margin in their side's ink, ultramarine
+   for developers and the issuer side, postmark blue-black for proof. Fixed in both schemes. */
+header.site.on-field.dev, .masthead.dev { background: #2b3f9e; }
+header.site.on-field.ink, .masthead.ink { background: #1b2232; }
+header.site.on-field.dev .mark { --mark-dot: #2b3f9e; }
+header.site.on-field.ink .mark { --mark-dot: #1b2232; }
+.masthead { color: #ffffff; --focus: #ffffff; position: relative; padding: 30px 0 58px; }
+.masthead::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 14px;
+  background: radial-gradient(circle at 50% 100%, var(--paper) 6px, transparent 6.5px) 0 0 / 18px 14px repeat-x;
+}
+.masthead h1 { color: #ffffff; }
+.masthead .lede { margin-top: 18px; }
+.masthead a { color: #ffffff; }
+.masthead .selvage, .app-head .selvage { margin: 26px 0 0; }
+.app-head .selvage { color: var(--muted); }
 .doc { display: grid; gap: 28px; grid-template-columns: minmax(0, 1fr); padding-top: 30px; padding-bottom: 70px; }
 @media (min-width: 960px) { .doc { grid-template-columns: 220px minmax(0, 1fr); gap: 56px; } }
 .toc { font: 500 0.74rem/1.4 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; }
 .toc ol { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 @media (min-width: 960px) {
-  .toc { position: sticky; top: 20px; align-self: start; }
+  .toc { position: sticky; top: 20px; align-self: start; padding-left: 18px; background: radial-gradient(circle, var(--rail) 1.6px, transparent 2px) 0 0 / 6px 10px repeat-y; }
   .toc ol { display: block; }
   .toc li { margin: 0 0 10px; }
 }
 .toc a { text-decoration: none; }
 .toc a:hover { text-decoration: underline; }
 .doc section { scroll-margin-top: 20px; }
-.doc section + section { margin-top: 52px; }
+.doc { --rail: var(--edge); }
+.doc.dev { --rail: var(--ultra); }
+.doc section + section { margin-top: 44px; padding-top: 40px; background: radial-gradient(circle, var(--rail) 1.6px, transparent 2px) 0 0 / 10px 6px repeat-x; }
 .doc h2 { font-size: clamp(1.7rem, 3.6vw, 2.4rem); }
 .doc h3 { margin-top: 26px; font-size: 1.3rem; }
-.dev-rule { color: var(--ultra); }
 pre.code {
   background: var(--sheet); color: var(--sheet-ink); border: 1px solid var(--line); border-left: 1px solid var(--line);
   padding: 14px 16px; border-radius: 3px; overflow-x: auto; font-size: 0.78rem; line-height: 1.65; margin: 10px 0 16px;
 }
-.code-block { position: relative; }
-.code-block .copy { position: absolute; right: 8px; top: 8px; min-height: 34px; padding: 6px 10px; font-size: 0.8rem; background: var(--sheet); color: var(--sheet-ink); border-color: var(--edge); }
+.code-block { margin: 10px 0 16px; }
+.code-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 6px 6px 16px;
+  background: var(--sheet); color: var(--sheet-muted); border: 1px solid var(--line); border-bottom: 1px dashed var(--line); border-radius: 3px 3px 0 0;
+  font: 500 0.74rem/1.3 var(--mono); letter-spacing: 0.04em; text-transform: uppercase;
+}
+.code-block pre.code { margin: 0; border-top: 0; border-radius: 0 0 3px 3px; }
+.code-bar .copy { min-height: 34px; padding: 6px 10px; font: 600 0.8rem/1.2 var(--sans); letter-spacing: 0; text-transform: none; background: var(--sheet); color: var(--sheet-ink); border-color: var(--edge); }
 table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 th, td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font: 600 0.76rem/1.3 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
@@ -348,7 +372,28 @@ td.num, th.num { text-align: right; }
 figure { margin: 0; }
 figure img { max-width: 100%; height: auto; border: 1px solid var(--line); display: block; }
 figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
-img.arch { max-width: 100%; height: auto; background: #ffffff; border: 1px solid var(--line); display: block; }
+/* The architecture figure: drawn on sheet paper in both schemes. */
+figure.arch { background: #ffffff; border: 1px solid var(--line); border-radius: 3px; padding: 14px 14px 12px; margin: 6px 0 22px; }
+figure.arch svg { display: block; width: 100%; height: auto; }
+figure.arch .arch-tall { display: none; max-width: 420px; margin: 0 auto; }
+@media (max-width: 640px) { figure.arch .arch-wide { display: none; } figure.arch .arch-tall { display: block; } }
+figure.arch figcaption { color: #525a69; }
+.arch .node .body { fill: #ffffff; stroke: #1b2232; stroke-width: 1.5; }
+.arch .node .head { fill: #1b2232; }
+.arch .node.buyer .head { fill: #c2341d; }
+.arch .node.operator .head { fill: #2b3f9e; }
+.arch .node.buyer .body { stroke: #c2341d; }
+.arch .node.operator .body { stroke: #2b3f9e; }
+.arch .node.public .body { stroke-dasharray: 5 4; }
+.arch .node .title { fill: #ffffff; font: 800 20px var(--display); text-transform: uppercase; letter-spacing: 0.02em; }
+.arch .node .line { fill: #1b2232; font: 400 14px var(--sans); }
+.arch .edge path { fill: none; stroke: #525a69; stroke-width: 1.5; }
+.arch .edge.dashed path { stroke-dasharray: 6 5; stroke: #2b3f9e; }
+.arch .edge text { fill: #525a69; font: 400 13px var(--sans); }
+.arch .edge.lane text { font-size: 12px; }
+.arch .arrowhead { fill: #525a69; }
+.arch .seam-line path { fill: none; stroke: #858b97; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0.1 9; }
+.arch .seam-line text { fill: #525a69; font: 500 11px var(--mono); letter-spacing: 0.1em; paint-order: stroke; stroke: #ffffff; stroke-width: 8px; stroke-linejoin: round; }
 
 footer.site { border-top: 1px solid var(--line); padding: 22px 0 30px; font-size: 0.86rem; color: var(--muted); }
 footer.site .status { display: flex; flex-wrap: wrap; gap: 6px 22px; font: 500 0.8rem/1.5 var(--mono); letter-spacing: 0.02em; }
@@ -358,4 +403,20 @@ footer.site p { max-width: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .postmark.strike .bars { stroke-dashoffset: 0; }
+}
+
+/* Card tables: rows stack into labelled cards on phones instead of running off the edge. */
+table.cards code { overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  table.cards, table.cards tbody, table.cards tr, table.cards td, table.cards th[scope='row'] { display: block; width: 100%; }
+  table.cards thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  table.cards tr { border-top: 1px solid var(--line); padding: 12px 0 10px; }
+  table.cards tr:last-child { border-bottom: 1px solid var(--line); }
+  table.cards td, table.cards th[scope='row'] { border: 0; padding: 2px 0 6px; text-align: left; overflow-wrap: anywhere; }
+  table.cards th[scope='row'] { font: 700 1rem/1.35 var(--sans); letter-spacing: 0; text-transform: none; color: inherit; }
+  table.cards td::before {
+    content: attr(data-label); content: attr(data-label) / '';
+    display: block; margin-bottom: 1px; font: 500 0.7rem/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+  }
+  table.cards td.mono::before { font-size: 0.7rem; }
 }

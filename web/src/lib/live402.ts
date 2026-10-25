@@ -28,7 +28,7 @@ export function useLive402(): Live402 {
           await client.acceptChallenge(res.headers.get('www-authenticate'));
           if (alive) setLive({ state: 'ok', offer: parseOffer(res.headers.get('fare-offer')), at: new Date() });
         } catch (e) {
-          if (alive) setLive({ state: 'refused', reason: e instanceof UnpinnedKeyError ? 'key not in directory' : 'bad challenge', at: new Date() });
+          if (alive) setLive({ state: 'refused', reason: e instanceof UnpinnedKeyError ? 'key not listed' : 'bad challenge', at: new Date() });
         }
       } catch {
         if (alive) setLive({ state: 'down', at: new Date() });

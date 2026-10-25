@@ -28,11 +28,11 @@ function LivePostmark() {
   if (live.state === 'loading') return <Postmark top="API · LIVE" bottom="ASKING" size={128} center="···" label="Asking the live API" />;
   if (live.state === 'down') return <Postmark size={128} top="API · LIVE" bottom={stamp(live.at)} center="NO ANSWER" tone="refused" label="The live API did not answer" />;
   if (live.state === 'refused')
-    return <Postmark size={128} top="RETURNED" bottom={stamp(live.at)} center="402" sub={live.reason.toUpperCase()} tone="refused" strike label={`Live API answered 402 but ${live.reason}`} />;
-  const offer = live.offer ? `${live.offer.pack} CALLS · ${live.offer.price_zec} TAZ` : stamp(live.at);
+    return <Postmark size={128} top="RETURNED" bottom={live.reason.toUpperCase()} center="402" sub={stamp(live.at)} tone="refused" strike label={`The live API answered 402, but ${live.reason === 'key not listed' ? 'its key is not in the published directory' : 'its challenge is malformed'}`} />;
+  const offer = live.offer ? `${live.offer.pack} FOR ${live.offer.price_zec} TAZ` : stamp(live.at);
   return (
     <Postmark
-      top="LIVE API · 402"
+      top="LIVE API"
       bottom={offer}
       center="402"
       sub="KEY MATCHES"
@@ -116,7 +116,7 @@ export function Home() {
           <div className="row">
             {key && key.issued > 0 ? (
               <div className="stack">
-                <Pane issued={Math.min(key.issued, 100)} spent={Math.min(spent, 100)} label={`${key.issued} tokens issued under the current key, ${spent} spent`} />
+                <Pane issued={key.issued} spent={spent} label={`${key.issued} tokens issued under the current key, ${spent} spent`} />
                 <p className="muted">
                   Every token under the current key looks the same: {key.issued} issued, {spent} spent. <Link to="/proof#ledger">See the live ledger</Link>
                 </p>

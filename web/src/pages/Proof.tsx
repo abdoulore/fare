@@ -1,6 +1,8 @@
 // /proof: everything a verifier needs, each claim next to its evidence. Purchase ids never
 // appear: they fetch signatures.
 
+import { Architecture } from '../components/Architecture.tsx';
+import { CardTable } from '../components/CardTable.tsx';
 import { Copy } from '../components/Copy.tsx';
 import { Pane } from '../components/Pane.tsx';
 import { CHECK_COMMANDS, PROOF, UIVK } from '../content/proof.ts';
@@ -47,16 +49,18 @@ export function Proof() {
   const refusals = stats ? Object.entries(stats.refused).filter(([, n]) => n > 0) : [];
   return (
     <>
-      <div className="wrap doc-head">
-        <h1>Check the claims</h1>
-        <p className="lede">Real testnet payments, a key you can verify them with, the live counts from both sides, and what Fare does not hide.</p>
-        <p className="selvage">
-          <span>Proof</span>
-          <span>Every claim beside its evidence</span>
-        </p>
+      <div className="masthead ink">
+        <div className="wrap">
+          <h1>Check the claims</h1>
+          <p className="lede">Real testnet payments, a key you can verify them with, the live counts from both sides, and what Fare does not hide.</p>
+          <p className="selvage">
+            <span>Proof</span>
+            <span>Every claim beside its evidence</span>
+          </p>
+        </div>
       </div>
 
-      <div className="wrap doc">
+      <div className="wrap doc ink">
         <nav className="toc" aria-label="On this page">
           <ol>
             {SECTIONS.map(([id, label]) => (
@@ -79,7 +83,7 @@ export function Proof() {
                 {error}
               </p>
             )}
-            <div className="torn">
+            <div className="torn ledger">
               <div className="half">
                 <p className="label">Issuer: purchases</p>
                 <p className="muted">Index, amount and height are visible to anyone with the published viewing key; status is the issuer's.</p>
@@ -173,50 +177,33 @@ export function Proof() {
               Every payment below is a real testnet transaction to a purchase address of the demo merchant, detected by the scanner from compact blocks. On a public explorer each one
               is a shielded transaction with 2 actions and a 0.0001 TAZ fee, and nothing else: paid, underpaid and second payments look the same.
             </p>
-            <div className="scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">Index</th>
-                    <th scope="col" className="num">
-                      TAZ
-                    </th>
-                    <th scope="col" className="num">
-                      Height
-                    </th>
-                    <th scope="col">Txid</th>
-                    <th scope="col">Shows</th>
-                    <th scope="col">Run</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {PROOF.map((r) => (
-                    <tr key={r.txid}>
-                      <td className="mono">+{r.index}</td>
-                      <td className="mono num">{r.amount}</td>
-                      <td className="mono num">{r.height}</td>
-                      <td className="mono">
-                        {EXPLORER_TX ? (
-                          <a href={`${EXPLORER_TX}${r.txid}`} rel="noreferrer noopener" target="_blank">
-                            {r.txid.slice(0, 10)}…{r.txid.slice(-6)}
-                          </a>
-                        ) : (
-                          <span title={r.txid}>
-                            {r.txid.slice(0, 10)}…{r.txid.slice(-6)}
-                          </span>
-                        )}
-                      </td>
-                      <td>{r.shows}</td>
-                      <td>
-                        <a href={r.run} rel="noreferrer noopener" target="_blank">
-                          {r.runLabel}
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <CardTable
+              head={['Index', 'TAZ', 'Height', 'Txid', 'Shows', 'Run']}
+              num={[1, 2]}
+              mono={[0, 1, 2, 3]}
+              rows={PROOF.map((r) => {
+                const short = `${r.txid.slice(0, 10)}…${r.txid.slice(-6)}`;
+                return {
+                  key: r.txid,
+                  cells: [
+                    `+${r.index}`,
+                    r.amount,
+                    r.height,
+                    EXPLORER_TX ? (
+                      <a href={`${EXPLORER_TX}${r.txid}`} rel="noreferrer noopener" target="_blank">
+                        {short}
+                      </a>
+                    ) : (
+                      <span title={r.txid}>{short}</span>
+                    ),
+                    r.shows,
+                    <a href={r.run} rel="noreferrer noopener" target="_blank">
+                      {r.runLabel}
+                    </a>,
+                  ],
+                };
+              })}
+            />
             <figure>
               <img src="/proof/underpaid-on-explorer.png" alt="The underpaid purchase (+5) on the ZecBlock testnet explorer: block 4,536,052, fee 0.0001 TAZ, 9,166 bytes, 2 Ironwood actions, and no sender, recipient or amount." width={1280} height={960} loading="lazy" />
               <figcaption>The underpaid purchase (+5) on a public testnet explorer: block, fee, size and two encrypted actions. The paid ones look identical.</figcaption>
@@ -241,39 +228,13 @@ export function Proof() {
 
           <section id="who-sees-what" aria-labelledby="who-h">
             <h2 id="who-h">Who sees what</h2>
-            <img
-              className="arch"
-              src="/architecture.png"
-              alt="Fare architecture: the buyer, the issuer with its scanner, and the API origin, joined only by the public issuer directory."
-              width={1344}
-              height={1018}
-              loading="lazy"
-            />
-            <div className="scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">Who</th>
-                    <th scope="col">Sees</th>
-                    <th scope="col">Cannot see</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {THREATS.map(([who, sees, not]) => (
-                    <tr key={who}>
-                      <th scope="row">{who}</th>
-                      <td>{sees}</td>
-                      <td>{not}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Architecture />
+            <CardTable head={['Who', 'Sees', 'Cannot see']} rowHeader rows={THREATS.map(([who, sees, not]) => ({ key: who, cells: [who, sees, not] }))} />
           </section>
 
           <section id="limits" aria-labelledby="limits-h">
             <h2 id="limits-h">What Fare does not hide</h2>
-            <dl className="kv">
+            <dl className="kv wide">
               {LIMITS.map(([k, v]) => (
                 <div key={k} className="contents">
                   <dt>{k}</dt>
