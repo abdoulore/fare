@@ -53,11 +53,16 @@ test('/app fits 375 px through a whole purchase', async ({ page }) => {
 test('the live postmark inscriptions fit their arcs in the real font', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('img', { name: /^Live check/ })).toBeVisible();
-  await page.evaluate(() => document.fonts.ready);
-  const overflow = await page.evaluate(() =>
-    [...document.querySelectorAll<SVGTextElement>('.postmark text.inscription')].map((t) => ({ text: t.textContent, len: t.getComputedTextLength(), arc: Math.PI * 46 - 20 })).filter((x) => x.len > x.arc),
-  );
-  expect(overflow).toEqual([]);
+  // fonts.ready can resolve before the mono face starts loading; load it by name, then measure.
+  await page.evaluate(() => document.fonts.load('600 10px "Martian Mono Variable"'));
+  expect(await page.evaluate(() => document.fonts.check('600 10px "Martian Mono Variable"'))).toBe(true);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        [...document.querySelectorAll<SVGTextElement>('.postmark text.inscription')].map((t) => ({ text: t.textContent, len: t.getComputedTextLength(), arc: Math.PI * 46 - 20 })).filter((x) => x.len > x.arc),
+      ),
+    )
+    .toEqual([]);
 });
 
 for (const path of ['/developers', '/proof']) {
