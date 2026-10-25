@@ -71,12 +71,14 @@ Do not change these without the owner.
 | Pack and price | One pack: 100 calls for 0.001 TAZ. The issuer refuses any other N (owner, Oct 24) |
 | Demo API | LLM proxy. With no model API key on the demo host, a canned responder labeled "simulated" in the UI and README (owner, Oct 24) |
 | Issuer key epoch | Rotates every 7 days; the previous key stays valid for a 24 h grace window (owner, Oct 24) |
-| Frontend look (D1) | "Quiet ledger": warm near-black, one amber accent, self-hosted IBM Plex Sans and Mono, the empty "no link" column, the anonymity-set dot grid (owner, Oct 24) |
+| Frontend look (D1) | "Sheet of stamps" (owner, Oct 25, replacing the Oct 24 "Quiet ledger"): a pack is a sheet of 100 stamps, each call cancels one with a postmark that names no sender. Vermilion, ultramarine, postmark blue-black and stamp green on white sheet paper (dark: black album page); Big Shoulders Display, Atkinson Hyperlegible Next, Martian Mono, all self-hosted. The direction contract lives in `web/.impeccable/surfaces/src-app-tsx.md` |
+| Site structure (Oct 25) | Home `/` (API providers lead), App `/app` (buyers and agents; `/try` redirects), Developers `/developers` (integration, contract, threat model), Proof `/proof` (live ledger, txids, viewing key, verifier; `/server` and `/how` redirect) (owner, Oct 25) |
+| Release (Oct 25) | The redesign builds on the branch; `main` and the live site stay on the working version until tests, axe, `design:check` and a paid hosted run pass. Freeze Oct 27 evening (Lagos) for the video (owner, Oct 25) |
 | Hosting (D2) | One VPS behind Caddy: static `web/` build plus `api.`, `issuer.` and `payer.` subdomains; scanner and panel on loopback only. DNS only for all four names, no CDN proxy in front (owner, Oct 24) |
 | Hosted payer (D3) | Both: the demo payer first (server-side `fare-wallet`, labeled as Fare's, 5 packs an hour, max 0.001 TAZ), and a QR for the visitor's own Ironwood wallet (owner, Oct 24) |
 | Public server view (D4) | Purchase index, amount, height, status, redemption counts per key, anonymity-set size. Never purchase ids: they fetch signatures (owner, Oct 24) |
 | Hosted answers (D5) | Real Claude answers if the host has `ANTHROPIC_API_KEY`, otherwise simulated and labeled on every answer (owner, Oct 24) |
-| Design check | impeccable (github.com/pbakaus/impeccable, Apache-2.0) as a dev-time check for `web/` only, telemetry off. Never shipped to buyers (owner, Oct 24). See "Dev-only tools" |
+| Design check | impeccable (github.com/pbakaus/impeccable, Apache-2.0) as a dev-time tool for `web/` only, telemetry off. Every command except `init` and `live` is allowed (owner, Oct 25). Never shipped to buyers. See "Dev-only tools" |
 
 ## Open decisions
 
@@ -181,8 +183,9 @@ node native-sign.mjs
 - It is a pinned `devDependency` of `web/` (`impeccable` 4.7.0). Nothing from it is imported by the app, and the built site contains no trace of it (invariant 12 is unaffected).
 - Telemetry is off twice: set `IMPECCABLE_NO_TELEMETRY=1` wherever it runs, and keep `"telemetry": false` in `web/.impeccable/config.json`. `detect` runs offline.
 - `npm run design:check` in `web/` (and CI's web job) scans the source and `/`, `/try`, `/server` rendered on the local e2e stack at 1280 and 375 px. It must stay clean.
-- Waivers go in `web/.impeccable/config.json` with a reason. The only one: `cream-palette`, because the warm light background is the locked Quiet ledger palette.
-- Allowed: `detect`, and the `critique`, `audit` and `polish` playbooks. Not allowed: `init` or any new-design flow (`shape`, `craft`, `live`, `generate`), and `bolder`, `colorize` or `animate`: the Quiet ledger look (D1) is locked.
+- Waivers go in `web/.impeccable/config.json` with a reason; remove a waiver when the design it covered is gone.
+- Allowed (owner, Oct 25): every command and playbook except `init` and `live`. `web/PRODUCT.md` was written by hand from verified facts (owner approved) because `concept-seed` needs it; keep it factual, never add claims.
+- The direction roll needs `https://impeccable.style/api/roll`, which Claude Code sandboxes block; the Oct 25 roll ran degraded (no catalog challengers) and says so in the surface brief.
 - Running as root (Claude Code sandboxes), Chromium needs `--no-sandbox`: point `IMPECCABLE_BROWSER` at a wrapper that adds it. CI runners do not need this.
 
 ## Privacy invariants

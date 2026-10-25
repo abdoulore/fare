@@ -3,3 +3,8 @@ test-results/
 playwright-report/
 e2e-data/
 hosted-results/
+.impeccable/questions/
+.impeccable/review/
+.impeccable/build/
+.impeccable/mocks/
+.impeccable/config.local.json
