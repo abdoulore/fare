@@ -2,7 +2,7 @@
 # Dev-time design check with impeccable (owner approved, telemetry off). Never shipped:
 # impeccable is a devDependency and nothing from it reaches the built site.
 #
-# Scans the source, then /, /try and /server rendered on the local e2e stack, at desktop
+# Scans the source, then /, /app, /developers and /proof rendered on the local e2e stack, at desktop
 # and phone width. Waivers live in .impeccable/config.json, each with a reason.
 #
 #   npm run design:check
@@ -32,6 +32,6 @@ done
 status=0
 npx impeccable detect src/ index.html || status=$?
 for viewport in 1280x800 375x740; do
-  npx impeccable detect --viewport "$viewport" http://127.0.0.1:4173/ http://127.0.0.1:4173/try http://127.0.0.1:4173/server || status=$?
+  npx impeccable detect --viewport "$viewport" http://127.0.0.1:4173/ http://127.0.0.1:4173/app http://127.0.0.1:4173/developers http://127.0.0.1:4173/proof || status=$?
 done
 exit "$status"

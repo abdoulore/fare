@@ -25,7 +25,7 @@ export function viewStatus(status: string): StepView {
     case 'paid':
       return { step: 3, label: 'paid', tone: 'paid', final: false, detail: 'One confirmation. The issuer signs your blinded requests.' };
     case 'underpaid':
-      return { step: -1, label: 'underpaid', tone: 'refused', final: true, detail: 'Mined but short of the price. No signatures are issued.' };
+      return { step: -1, label: 'postage due', tone: 'refused', final: true, detail: 'Underpaid: mined but short of the price. No signatures are issued.' };
     case 'expired':
       return { step: -1, label: 'expired', tone: 'refused', final: true, detail: 'Nobody paid within 24 hours. Order again.' };
     case 'key_retired':

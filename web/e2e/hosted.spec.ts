@@ -44,7 +44,7 @@ test('hosted: demo payer buys a pack, 3 calls, replay refused', async ({ page, r
   await expect(page.getByTestId('status-line')).toBeVisible();
   await shot(page, '01-landing');
 
-  await page.goto('/try');
+  await page.goto('/app');
   await page.getByRole('button', { name: 'Ask without a token' }).click();
   await expect(page.getByTestId('probe')).toContainText('key matches the published directory');
   await shot(page, '02-402');
@@ -83,7 +83,7 @@ test('hosted: demo payer buys a pack, 3 calls, replay refused', async ({ page, r
   await expect(page.getByTestId('replay-refused')).toContainText('401 token_reused');
   await shot(page, '06-calls-and-replay');
 
-  await page.goto('/server');
+  await page.goto('/proof');
   await expect(page.getByTestId('issuer-table')).toContainText('paid', { timeout: 30_000 });
   await page.waitForTimeout(2_000);
   await shot(page, '07-server');

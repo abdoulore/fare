@@ -4,7 +4,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 async function ask(page: Page) {
-  await page.goto('/try');
+  await page.goto('/app');
   const btn = page.getByRole('button', { name: 'Ask without a token' });
   await expect(btn).toBeEnabled();
   await btn.click();
@@ -33,7 +33,7 @@ test('402, buy, demo payer, paid, 100 tokens, 3 calls, replay and model failure 
   await expect(probe).toContainText('100 calls for 0.001 TAZ');
 
   const purchaseId = await buy(page);
-  await expect(page.getByText(/blinded 100 of 100 nonces in this browser, \d+ ms/)).toBeVisible();
+  await expect(page.getByText(/blinded 100 of 100 in this browser, \d+ ms/)).toBeVisible();
 
   await page.getByRole('button', { name: 'Pay 0.001 TAZ with the demo payer' }).click();
   await expect(page.getByTestId('demo-paid')).toContainText('Paid by the demo wallet, not by you');
@@ -44,7 +44,7 @@ test('402, buy, demo payer, paid, 100 tokens, 3 calls, replay and model failure 
   await expect(page.getByRole('heading', { name: 'Use' })).toBeFocused();
 
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Ask with one token' }).click(), await expect(page.getByTestId('tokens-left')).toHaveText(String(99 - i));
-  await expect(page.getByTestId('answers').locator('.badge.sim')).toHaveCount(3);
+  await expect(page.getByTestId('answers').locator('.sim')).toHaveCount(3);
 
   await page.getByRole('button', { name: 'Replay my last token' }).click();
   await expect(page.getByTestId('replay-refused')).toContainText('401 token_reused');
@@ -63,7 +63,7 @@ test('402, buy, demo payer, paid, 100 tokens, 3 calls, replay and model failure 
   await expect(page.getByTestId('tokens-total')).toHaveText('96 unspent');
 
   // The server view: both sides, no link, and never the purchase id.
-  await page.getByRole('link', { name: 'What the server sees' }).first().click();
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Proof' }).click();
   await expect(page.getByTestId('issuer-table')).toContainText('paid');
   await expect(page.getByTestId('origin-stats')).toContainText('Served');
   await expect(page.getByTestId('no-link')).toBeVisible();
@@ -78,7 +78,7 @@ test('402, buy, demo payer, paid, 100 tokens, 3 calls, replay and model failure 
   expect(await page.content()).not.toContain(purchaseId);
 
   // Forget my tokens.
-  await page.goto('/try');
+  await page.goto('/app');
   await expect(page.getByTestId('tokens-total')).toHaveText('96 unspent');
   await page.getByRole('button', { name: 'Forget my tokens' }).click();
   await expect(page.getByText('Delete 96 unspent tokens? They cannot be recovered.')).toBeVisible();
@@ -95,9 +95,10 @@ test('402, buy, demo payer, paid, 100 tokens, 3 calls, replay and model failure 
 test('an underpaid purchase gets no tokens', async ({ page }) => {
   await ask(page);
   await buy(page);
+  await page.getByText('Test the refusals').click();
   await page.getByRole('button', { name: 'Pay half (shows underpaid)' }).click();
   await expect(page.getByTestId('demo-paid')).toContainText('Sent 0.0005 TAZ');
-  await expect(page.getByTestId('status-label')).toHaveText('underpaid');
+  await expect(page.getByTestId('status-label')).toHaveText('postage due');
   await expect(page.getByTestId('status')).toContainText('No signatures are issued');
   await expect(page.getByTestId('dead')).toContainText('No tokens from this purchase');
   await expect(page.getByTestId('payment-receipt')).toContainText('sent 0.0005 TAZ by the demo wallet');
@@ -110,7 +111,8 @@ test('a challenge with an unlisted key is refused before any order', async ({ pa
   page.on('request', (r) => {
     if (r.url().endsWith('/fare/purchases') && r.method() === 'POST') orders++;
   });
-  await page.goto('/try');
+  await page.goto('/app');
+  await page.getByText('Test the refusals').click();
   await page.getByLabel('Simulate a malicious API that swaps the challenge key').check();
   await page.getByRole('button', { name: 'Ask without a token' }).click();
   await expect(page.getByTestId('key-refused')).toContainText('not in the issuer directory');
@@ -133,7 +135,7 @@ test('an expired purchase says so and offers a new one', async ({ page }) => {
 test('every page loads only from this origin and the stack', async ({ page }) => {
   const hosts = new Set<string>();
   page.on('request', (r) => hosts.add(new URL(r.url()).host));
-  for (const path of ['/', '/try', '/server', '/proof', '/how']) {
+  for (const path of ['/', '/app', '/developers', '/proof']) {
     await page.goto(path);
     await expect(page.locator('h1')).toBeVisible();
   }
@@ -141,4 +143,18 @@ test('every page loads only from this origin and the stack', async ({ page }) =>
   const csp = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
   expect(csp).toContain("default-src 'self'");
   expect(csp).toContain('connect-src');
+});
+
+test('old paths redirect to where their content lives now', async ({ page }) => {
+  for (const [from, to] of [['/try', /\/app$/], ['/server', /\/proof#ledger$/], ['/how', /\/proof#who-sees-what$/]] as const) {
+    await page.goto(from);
+    await expect(page).toHaveURL(to);
+    await expect(page.locator('h1')).toBeVisible();
+  }
+});
+
+test('home shows a live 402 from the API with the key checked against the directory', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('img', { name: /hosted API answered 402 Payment Required, 100 calls for 0.001 TAZ, and its key matches the published directory/ })).toBeVisible();
+  await expect(page.getByTestId('hero-stamp')).toContainText("createOrigin");
 });

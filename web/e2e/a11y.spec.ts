@@ -1,5 +1,5 @@
 // Accessibility: no axe-core violations (WCAG 2.1 A and AA) on any page, in both colour
-// schemes, including /try after a purchase with answers and a refusal on screen.
+// schemes, including /app after a purchase with answers and a refusal on screen.
 
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
@@ -12,7 +12,7 @@ async function audit(page: Page) {
 for (const scheme of ['dark', 'light'] as const) {
   test.describe(scheme, () => {
     test.use({ colorScheme: scheme });
-    for (const path of ['/', '/server', '/proof', '/how']) {
+    for (const path of ['/', '/developers', '/proof']) {
       test(`${path} has no violations`, async ({ page }) => {
         await page.goto(path);
         await expect(page.locator('h1')).toBeVisible();
@@ -20,8 +20,8 @@ for (const scheme of ['dark', 'light'] as const) {
         await audit(page);
       });
     }
-    test('/try has no violations through a purchase', async ({ page }) => {
-      await page.goto('/try');
+    test('/app has no violations through a purchase', async ({ page }) => {
+      await page.goto('/app');
       await audit(page);
       await page.getByRole('button', { name: 'Ask without a token' }).click();
       await page.getByRole('button', { name: 'Buy 100 calls' }).click();
