@@ -31,3 +31,21 @@ test('the main flow is reachable by keyboard', async ({ page }) => {
   await expect(page).toHaveURL(/\/app$/);
   await expect(page.getByRole('button', { name: 'Ask without a token' })).toBeEnabled();
 });
+
+test('/app fits 375 px through a whole purchase', async ({ page }) => {
+  const width = () => page.evaluate(() => document.documentElement.scrollWidth);
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Ask without a token' }).click();
+  await expect(page.getByTestId('probe')).toContainText('key matches the published directory');
+  expect(await width(), 'after the 402').toBeLessThanOrEqual(375);
+  await page.getByRole('button', { name: 'Buy 100 calls' }).click();
+  await expect(page.getByTestId('order')).toBeVisible();
+  await page.getByRole('button', { name: 'Pay 0.001 TAZ with the demo payer' }).click();
+  await expect(page.getByTestId('status-label')).toBeVisible();
+  expect(await width(), 'while waiting').toBeLessThanOrEqual(375);
+  await expect(page.getByTestId('tokens-left')).toHaveText('100', { timeout: 30_000 });
+  await page.getByRole('button', { name: 'Ask with one token' }).click();
+  await page.getByRole('button', { name: 'Replay my last token' }).click();
+  await expect(page.getByTestId('replay-refused')).toBeVisible();
+  expect(await width(), 'with tokens and a refusal').toBeLessThanOrEqual(375);
+});
