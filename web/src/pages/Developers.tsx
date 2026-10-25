@@ -60,7 +60,10 @@ if (!verdict.ok) return res.writeHead(401).end(JSON.stringify({ error: verdict.r
 const AGENT = `// npm install ../fare/sdk
 import { FareClient } from 'fare-sdk';
 
-const fare = new FareClient({ issuerUrl: 'https://issuer.example.com', stateFile: 'fare-state.json' });
+const fare = new FareClient({
+  issuerUrl: 'https://issuer.example.com',
+  stateFile: 'fare-state.json',
+});
 await fare.pin();                                // pin the directory key once
 
 const res = await fare.fetch('https://api.example.com/v1/ask', {
@@ -170,6 +173,7 @@ export function Developers() {
             <h2 id="contract-h">HTTP contract</h2>
             <CardTable
               head={['Request', 'Answer']}
+              firstCol="36%"
               mono={[0]}
               rows={[
                 {
@@ -212,7 +216,7 @@ export function Developers() {
               ]}
             />
             <h3>Refusals</h3>
-            <CardTable head={['Code', 'Means']} mono={[0]} rows={REFUSALS.map(([code, means]) => ({ key: code, cells: [code, means] }))} />
+            <CardTable head={['Code', 'Means']} firstCol="36%" mono={[0]} rows={REFUSALS.map(([code, means]) => ({ key: code, cells: [code, means] }))} />
           </section>
 
           <section id="operating" aria-labelledby="op-h">

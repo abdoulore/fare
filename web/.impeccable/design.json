@@ -1,0 +1,338 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-25T18:06:07+00:00",
+  "title": "Design System: Fare",
+  "extensions": {
+    "colorMeta": {
+      "vermilion": {
+        "role": "primary",
+        "displayName": "Vermilion",
+        "canonical": "#c2341d",
+        "tonalRamp": [
+          "#3d0f08",
+          "#5e170c",
+          "#8a2213",
+          "#c2341d",
+          "#d9563f",
+          "#e8826f",
+          "#f2b0a4",
+          "#fadcd6"
+        ]
+      },
+      "ultramarine": {
+        "role": "secondary",
+        "displayName": "Ultramarine",
+        "canonical": "#2b3f9e",
+        "tonalRamp": [
+          "#0d1433",
+          "#152050",
+          "#1f2e77",
+          "#2b3f9e",
+          "#4a5fbf",
+          "#7586d4",
+          "#a6b2e6",
+          "#d6dcf5"
+        ]
+      },
+      "stamp-green": {
+        "role": "tertiary",
+        "displayName": "Stamp Green",
+        "canonical": "#1d6a44",
+        "tonalRamp": [
+          "#082116",
+          "#0e3423",
+          "#154d33",
+          "#1d6a44",
+          "#2f8a5d",
+          "#5aac82",
+          "#94cdaf",
+          "#cfe9db"
+        ]
+      },
+      "postmark-ink": {
+        "role": "neutral",
+        "displayName": "Postmark Ink",
+        "canonical": "#1b2232",
+        "tonalRamp": [
+          "#0b0e15",
+          "#1b2232",
+          "#2c3448",
+          "#434c62",
+          "#5e677c",
+          "#858b97",
+          "#b4b8c1",
+          "#e3e5e9"
+        ]
+      },
+      "sheet-paper": {
+        "role": "neutral",
+        "displayName": "Sheet Paper",
+        "canonical": "#f6f7f5"
+      },
+      "stamp-white": {
+        "role": "neutral",
+        "displayName": "Stamp White",
+        "canonical": "#ffffff"
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "#525a69"
+      },
+      "perforation-line": {
+        "role": "neutral",
+        "displayName": "Perforation Line",
+        "canonical": "#dde0e5"
+      },
+      "perforation-edge": {
+        "role": "neutral",
+        "displayName": "Perforation Edge",
+        "canonical": "#858b97"
+      },
+      "album-black": {
+        "role": "neutral",
+        "displayName": "Album Black (dark page)",
+        "canonical": "#111216"
+      },
+      "album-paper": {
+        "role": "neutral",
+        "displayName": "Album Paper (dark scheme paper)",
+        "canonical": "#f3f4f1"
+      },
+      "album-ink": {
+        "role": "neutral",
+        "displayName": "Album Ink (dark text)",
+        "canonical": "#e9eaee"
+      },
+      "album-muted": {
+        "role": "neutral",
+        "displayName": "Album Muted",
+        "canonical": "#a3a8b4"
+      },
+      "album-line": {
+        "role": "neutral",
+        "displayName": "Album Line",
+        "canonical": "#2a2d35"
+      },
+      "album-vermilion": {
+        "role": "primary",
+        "displayName": "Album Vermilion (on black)",
+        "canonical": "#ff7a5c"
+      },
+      "album-ultramarine": {
+        "role": "secondary",
+        "displayName": "Album Ultramarine (on black)",
+        "canonical": "#9bb0ff"
+      },
+      "album-green": {
+        "role": "tertiary",
+        "displayName": "Album Green (on black)",
+        "canonical": "#6fd39f"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The one h1 per route, uppercase, white on its sheet margin."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings, uppercase."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Step and door headings, uppercase."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Reading text at a 34em measure."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "The paragraph under each h1, 30em measure."
+      },
+      "label": {
+        "displayName": "Inscription",
+        "purpose": "Sheet-margin inscriptions, nav, table heads, TOC, the no-link seam."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Code blocks; inline mono is 0.86em of its context."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "postmark-press",
+        "value": "0.32s cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "purpose": "The postmark ring fades in from 115% scale once when mounted."
+      },
+      {
+        "name": "postmark-strike",
+        "value": "0.5s cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "purpose": "The wavy bars draw on once when mounted."
+      },
+      {
+        "name": "replay-bounce",
+        "value": "0.42s ease-in-out",
+        "purpose": "A refused replay shakes once, as if returned."
+      },
+      {
+        "name": "counter-tick",
+        "value": "0.35s ease-out",
+        "purpose": "The token counter drops in when it changes."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "prefers-reduced-motion removes every animation; the postmark bars render struck."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone-cards",
+        "value": "640px"
+      },
+      {
+        "name": "gutter",
+        "value": "760px"
+      },
+      {
+        "name": "torn-halves",
+        "value": "860px"
+      },
+      {
+        "name": "doc-and-app-grid",
+        "value": "960px"
+      },
+      {
+        "name": "hero-two-column",
+        "value": "980px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action on a screen, in the buyer's vermilion.",
+      "html": "<button class=\"ds-btn-primary\">Buy 100 calls</button>",
+      "css": ".ds-btn-primary { font: 600 1rem/1.2 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif; min-height: 46px; padding: 11px 18px; border-radius: 3px; border: 1.5px solid #c2341d; background: #c2341d; color: #ffffff; cursor: pointer; } .ds-btn-primary:hover { background: color-mix(in srgb, #c2341d 88%, black); } .ds-btn-primary:focus-visible { outline: 2px solid #2b3f9e; outline-offset: 3px; }"
+    },
+    {
+      "name": "Default Button",
+      "kind": "button",
+      "refersTo": "button-default",
+      "description": "Secondary actions: an ink outline on paper.",
+      "html": "<button class=\"ds-btn\">Replay my last token</button>",
+      "css": ".ds-btn { font: 600 1rem/1.2 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif; min-height: 46px; padding: 11px 18px; border-radius: 3px; border: 1.5px solid #1b2232; background: transparent; color: #1b2232; cursor: pointer; } .ds-btn:hover { background: color-mix(in srgb, #1b2232 8%, transparent); } .ds-btn:focus-visible { outline: 2px solid #2b3f9e; outline-offset: 3px; }"
+    },
+    {
+      "name": "Developer Button",
+      "kind": "button",
+      "refersTo": "button-developer",
+      "description": "The way into the developer side, in ultramarine.",
+      "html": "<a class=\"ds-btn-dev\" href=\"#\">Developers</a>",
+      "css": ".ds-btn-dev { display: inline-flex; align-items: center; font: 600 1rem/1.2 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif; min-height: 46px; padding: 11px 18px; border-radius: 3px; border: 1.5px solid #2b3f9e; background: #2b3f9e; color: #ffffff; text-decoration: none; } .ds-btn-dev:focus-visible { outline: 2px solid #2b3f9e; outline-offset: 3px; }"
+    },
+    {
+      "name": "Status Tags",
+      "kind": "chip",
+      "refersTo": "tag",
+      "description": "State as a word in postal terms, colored by its ink.",
+      "html": "<span class=\"ds-tag ds-paid\">paid</span> <span class=\"ds-tag ds-refused\">postage due</span> <span class=\"ds-tag\">simulated</span>",
+      "css": ".ds-tag { font: 600 0.76rem/1.25 'Martian Mono Variable', ui-monospace, monospace; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 8px; border: 1.5px solid currentColor; border-radius: 2px; display: inline-block; color: #1b2232; } .ds-paid { color: #1d6a44; } .ds-refused { color: #c2341d; }"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "description": "Routes set as a sheet-margin inscription; the current one underlined.",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\" aria-current=\"page\">App</a><a href=\"#\">Developers</a><a href=\"#\">Proof</a></nav>",
+      "css": ".ds-nav { display: flex; gap: 4px; background: #c2341d; padding: 12px; } .ds-nav a { color: #ffffff; text-decoration: none; padding: 8px 10px; font: 500 0.78rem/1 'Martian Mono Variable', ui-monospace, monospace; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 2px solid transparent; } .ds-nav a[aria-current='page'], .ds-nav a:hover { border-bottom-color: currentColor; } .ds-nav a:focus-visible { outline: 2px solid #ffffff; outline-offset: 3px; }"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "A sheet of paper for a working step; paper in both schemes.",
+      "html": "<section class=\"ds-panel\"><h2>Your sheet</h2><p>99 tokens left for this API</p></section>",
+      "css": ".ds-panel { background: #ffffff; color: #1b2232; border: 1px solid #dde0e5; border-radius: 3px; padding: 20px; } .ds-panel h2 { margin: 0 0 8px; font: 800 1.8rem/0.98 'Big Shoulders Display Variable', 'Arial Narrow', sans-serif; text-transform: uppercase; } .ds-panel p { margin: 0; color: #525a69; font: 400 1.0625rem/1.6 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif; }"
+    },
+    {
+      "name": "Perforated Stamp",
+      "kind": "custom",
+      "refersTo": "stamp",
+      "description": "White paper with round holes cut along its padding box; the content box stays solid.",
+      "html": "<div class=\"ds-stamp\"><div class=\"ds-stamp-in\"><b>Your API</b><span>fare-origin</span></div></div>",
+      "css": ".ds-stamp { background: #ffffff; color: #1b2232; padding: 10px; -webkit-mask: radial-gradient(5px, #0000 97%, #000) round -5px -5px / 15px 15px, linear-gradient(#000 0 0) content-box; mask: radial-gradient(5px, #0000 97%, #000) round -5px -5px / 15px 15px, linear-gradient(#000 0 0) content-box; display: inline-block; } .ds-stamp-in { padding: 14px 16px; display: grid; gap: 2px; } .ds-stamp b { font: 800 2.3rem/1 'Big Shoulders Display Variable', 'Arial Narrow', sans-serif; text-transform: uppercase; } .ds-stamp span { font: 400 0.78rem/1.4 'Martian Mono Variable', ui-monospace, monospace; }"
+    },
+    {
+      "name": "No-link Seam",
+      "kind": "custom",
+      "description": "The perforation that tears the issuer's half from the API's half.",
+      "html": "<div class=\"ds-seam\"><span>no link</span></div>",
+      "css": ".ds-seam { min-height: 56px; display: grid; place-items: center; color: #525a69; font: 500 0.76rem/1.2 'Martian Mono Variable', ui-monospace, monospace; letter-spacing: 0.1em; text-transform: uppercase; background: radial-gradient(circle, #858b97 2px, transparent 2.5px) center / 12px 12px repeat-x; } .ds-seam span { background: #f6f7f5; padding: 4px 8px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Sheet of Stamps",
+    "overview": "A pack is a sheet of 100 stamps, and every call cancels one with a postmark that names no sender. The site is built from the materials of philately: gummed sheet paper, perforations, condensed stamp lettering, sheet-margin inscriptions in small mono capitals, and the postmark's double ring with its wavy bars. Each side of the product owns one ink. The buyer's side and the primary action are vermilion, the developer and issuer side ultramarine, proof and cancellations postmark blue-black, and paid is stamp green.\n\nThe surfaces are flat and printed. Depth comes from paper on paper (white stamps and panels on a cool sheet, or mounted on a black album page in the dark scheme), never from shadows. Each route opens on a full-bleed sheet margin in its side's ink, perforated along its lower edge, then settles into a calm reading or working column. Motion is limited to the ink: a postmark presses and its bars strike on, a refused replay bounces, a counter ticks. Reduced motion removes all of it.\n\nThe site refuses the crypto default (dark, neon, coins, padlocks), the cream editorial look, and the SaaS dashboard of metric cards and sidebars. State is named in postal terms: postage due (underpaid), already cancelled (a replayed token), returned (a key the directory does not list).",
+    "keyCharacteristics": [
+      "One ink per side of the product, fixed in both schemes on the sheet margins.",
+      "Perforation is the only divider device: stamp edges, margin edges, the \"no link\" seam, rails and section rules.",
+      "Stamps and panels are paper in both schemes; they carry the light inks locally.",
+      "Display lettering is condensed, uppercase and heavy; reading text is Atkinson at a 34em measure.",
+      "Every status a buyer sees is also a word, never color alone."
+    ],
+    "rules": [
+      {
+        "name": "The One Ink Per Side Rule",
+        "body": "A route's sheet margin and its accents take the ink of the side it serves: vermilion for Home and App, ultramarine for Developers, postmark ink for Proof. Do not mix a second accent into a margin.",
+        "section": "colors"
+      },
+      {
+        "name": "The Paper Stays Paper Rule",
+        "body": "Stamps, panels, code blocks and figures keep their light inks in the dark scheme. They are paper mounted on the album page, not dark cards.",
+        "section": "colors"
+      },
+      {
+        "name": "The Word Beside The Color Rule",
+        "body": "Green, vermilion and ultramarine never carry state alone. A tag, a step label or a postmark inscription names it.",
+        "section": "colors"
+      },
+      {
+        "name": "The Inscription Below The Heading Rule",
+        "body": "Sheet-margin inscriptions sit under the lede or at the margin's foot, never above a heading as a kicker.",
+        "section": "typography"
+      },
+      {
+        "name": "The Fitted Ring Rule",
+        "body": "Postmark inscriptions are sized to fit their half ring (Martian Mono advances 0.7 em) and kept short enough to stay at or above 8px. A string that would need less is shortened, not shrunk.",
+        "section": "typography"
+      },
+      {
+        "name": "The Printed Not Raised Rule",
+        "body": "Never add a shadow, bevel or emboss to suggest a stamp. A stamp is defined by its perforated edge and its paper color.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** open every route on a sheet margin in its side's ink, perforated along its lower edge.",
+      "**Do** show the issuer and the API as two halves torn along a \"no link\" perforation whenever both appear.",
+      "**Do** name state in postal terms beside its color: postage due, already cancelled, returned, paid.",
+      "**Do** keep stamps, panels, code and figures on light paper in the dark scheme.",
+      "**Do** draw tokens as stamps in sheets of 100, spent ones cancelled with the ink postmark bars.",
+      "**Do** label anything simulated on the element itself (the \"simulated\" tag on every canned answer)."
+    ],
+    "donts": [
+      "**Don't** use cream, warm beige or editorial off-white grounds. Sheet Paper is cool white.",
+      "**Don't** use the crypto default: dark neon, coins, padlocks, glowing gradients.",
+      "**Don't** build a dashboard of metric cards or a sidebar shell.",
+      "**Don't** add shadows, bevels or emboss to stamps or panels.",
+      "**Don't** set an inscription above a heading as a kicker or eyebrow.",
+      "**Don't** load a font, image or script from another origin. All type is self-hosted.",
+      "**Don't** let a postmark inscription run past its arc, and don't shrink one below 8px to make it fit."
+    ]
+  }
+}

@@ -390,7 +390,7 @@ export function Use() {
     if (n === 4 && dead) return 'dead';
     return finished ? 'done' : reached ? 'active' : 'locked';
   };
-  // The buyer's own sheet: whole panes of 100, spent stamps struck through.
+  // The buyer's own sheet: whole panes of 100, spent stamps cancelled.
   const sheetSize = Math.max(100, Math.ceil(tokens / 100) * 100);
   const lastExchange = exchanges[0];
 
@@ -421,15 +421,17 @@ export function Use() {
 
   return (
     <>
-      <div className="wrap app-head">
-        <h1>Call an API privately</h1>
-        <p className="lede">Buy 100 calls once, then ask questions. Your browser makes the tokens; the server signs them without seeing them, and each works once.</p>
-        <p className="selvage muted">
-          <span>App</span>
-          <span>Zcash testnet</span>
-          <span>Tokens stay in this browser</span>
-        </p>
-        {!client && <p aria-live="polite">Checking the issuer key…</p>}
+      <div className="masthead buyer">
+        <div className="wrap">
+          <h1>Call an API privately</h1>
+          <p className="lede">Buy 100 calls once, then ask questions. Your browser makes the tokens; the server signs them without seeing them, and each works once.</p>
+          <p className="selvage">
+            <span>App</span>
+            <span>Zcash testnet</span>
+            <span>Tokens stay in this browser</span>
+          </p>
+          {!client && <p aria-live="polite">Checking the issuer key…</p>}
+        </div>
       </div>
 
       <div className="wrap app-grid">
@@ -669,7 +671,11 @@ export function Use() {
               </span>
             </div>
             <p className="muted">tokens left for this API</p>
-            {tokens > 0 && <Pane large issued={sheetSize} spent={sheetSize - tokens} label={`Your sheet: ${tokens} unspent of ${sheetSize}`} />}
+            {tokens > 0 ? (
+              <Pane large issued={sheetSize} spent={sheetSize - tokens} label={`Your sheet: ${tokens} unspent of ${sheetSize}`} />
+            ) : (
+              <Pane large blank issued={100} spent={0} label={paid ? 'No tokens left' : 'An empty sheet: 100 stamps, signed once your payment confirms'} />
+            )}
             <p className="mono" data-testid="tokens-total">
               {tokens} unspent
             </p>

@@ -3,6 +3,7 @@
 
 import { Architecture } from '../components/Architecture.tsx';
 import { CardTable } from '../components/CardTable.tsx';
+import { CodeBlock } from '../components/CodeBlock.tsx';
 import { Copy } from '../components/Copy.tsx';
 import { Pane } from '../components/Pane.tsx';
 import { CHECK_COMMANDS, PROOF, UIVK } from '../content/proof.ts';
@@ -161,8 +162,7 @@ export function Proof() {
               <>
                 <p>
                   A token hides among every token issued under the same key: <span className="mono">{key.issued}</span> from <span className="mono">{key.packs}</span>{' '}
-                  {key.packs === 1 ? 'purchase' : 'purchases'} under key <span className="mono">{key.key_id.slice(0, 12)}</span>, <span className="mono">{spent}</span> spent (struck
-                  through).
+                  {key.packs === 1 ? 'purchase' : 'purchases'} under key <span className="mono">{key.key_id.slice(0, 12)}</span>, <span className="mono">{spent}</span> spent (cancelled).
                 </p>
                 <Pane issued={key.issued} spent={spent} />
               </>
@@ -179,6 +179,7 @@ export function Proof() {
             </p>
             <CardTable
               head={['Index', 'TAZ', 'Height', 'Txid', 'Shows', 'Run']}
+              inline
               num={[1, 2]}
               mono={[0, 1, 2, 3]}
               rows={PROOF.map((r) => {
@@ -216,11 +217,11 @@ export function Proof() {
             <p className="mono break" data-testid="uivk">
               {UIVK}
             </p>
-            <Copy text={UIVK} label="Copy viewing key" />
+            <div className="after-copy">
+              <Copy text={UIVK} label="Copy viewing key" />
+            </div>
             <p>With that key alone, no seed and nothing from us, a watch-only scanner lists every payment by purchase index:</p>
-            <pre className="code" tabIndex={0} aria-label="Verifier commands">
-              {CHECK_COMMANDS}
-            </pre>
+            <CodeBlock code={CHECK_COMMANDS} title="Terminal" label="Copy commands" />
             <p className="muted">
               <code>init --uivk</code> refuses to mint. The scan needs a machine that can reach <code>testnet.zec.rocks</code>.
             </p>

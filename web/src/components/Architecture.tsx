@@ -11,7 +11,7 @@ type Seam = { d: string; lx: number; ly: number; rotate?: boolean };
 
 const NODES: Node[] = [
   { id: 'buyer', title: "Buyer's browser or agent", lines: ['pins the published key', 'blinds 100 requests, unblinds', 'spends one token per call'], side: 'buyer' },
-  { id: 'wallet', title: 'Payer wallet', lines: ['your own shielded wallet, or', "Fare's demo payer on this site"], side: 'buyer' },
+  { id: 'wallet', title: 'Payer wallet', lines: ['your own shielded wallet, or', "Fare's demo payer (hosted demo)"], side: 'buyer' },
   { id: 'issuer', title: 'Issuer', lines: ['signs 100 blinded requests', 'after 1 confirmation', 'never sees a token'], side: 'operator' },
   { id: 'scanner', title: 'Scanner', lines: ['viewing key only', 'matches by address index', 'no memo, no tx lookups'], side: 'operator' },
   { id: 'origin', title: 'Your API + fare-origin', lines: ['checks key, challenge,', 'signature and spent set', 'never sees a purchase'], side: 'operator' },

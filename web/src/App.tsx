@@ -27,7 +27,7 @@ export function App() {
   useEffect(() => {
     document.title = TITLES[route];
   }, [route]);
-  const field = route === '/' ? ' on-field' : route === '/developers' ? ' on-field dev' : route === '/proof' ? ' on-field ink' : '';
+  const field = route === '/' || route === '/app' ? ' on-field' : route === '/developers' ? ' on-field dev' : route === '/proof' ? ' on-field ink' : '';
   return (
     <>
       <a className="skip" href="#main">

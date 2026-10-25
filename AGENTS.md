@@ -185,6 +185,7 @@ node native-sign.mjs
 - `npm run design:check` in `web/` (and CI's web job) scans the source and `/`, `/app`, `/developers`, `/proof` rendered on the local e2e stack at 1280 and 375 px. It must stay clean.
 - Waivers go in `web/.impeccable/config.json` with a reason; remove a waiver when the design it covered is gone.
 - Allowed (owner, Oct 25): every command and playbook except `init` and `live`. `web/PRODUCT.md` was written by hand from verified facts (owner approved) because `concept-seed` needs it; keep it factual, never add claims.
+- `web/DESIGN.md` and `web/.impeccable/design.json` record the sheet-of-stamps system as built (tokens, type, components, rules), written after the Oct 25 finish review. Development files, never served. Update them when the system changes.
 - The direction roll needs `https://impeccable.style/api/roll`, which Claude Code sandboxes block; the Oct 25 roll ran degraded (no catalog challengers) and says so in the surface brief.
 - Running as root (Claude Code sandboxes), Chromium needs `--no-sandbox`: point `IMPECCABLE_BROWSER` at a wrapper that adds it. CI runners do not need this.
 

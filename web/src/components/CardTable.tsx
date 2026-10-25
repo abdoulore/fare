@@ -8,14 +8,34 @@ export interface CardRow {
   cells: ReactNode[];
 }
 
-export function CardTable({ head, rows, num = [], mono = [], rowHeader = false, testId }: { head: string[]; rows: CardRow[]; num?: number[]; mono?: number[]; rowHeader?: boolean; testId?: string }) {
+export function CardTable({
+  head,
+  rows,
+  num = [],
+  mono = [],
+  rowHeader = false,
+  inline = false,
+  firstCol,
+  testId,
+}: {
+  head: string[];
+  rows: CardRow[];
+  num?: number[];
+  mono?: number[];
+  rowHeader?: boolean;
+  /** On phones, set each label beside its value (short values only). */
+  inline?: boolean;
+  /** Width of the first column on wide screens. */
+  firstCol?: string;
+  testId?: string;
+}) {
   const cls = (i: number) => [mono.includes(i) ? 'mono' : '', num.includes(i) ? 'num' : ''].filter(Boolean).join(' ') || undefined;
   return (
-    <table className="cards" role="table" data-testid={testId}>
+    <table className={`cards${inline ? ' inline' : ''}`} role="table" data-testid={testId}>
       <thead role="rowgroup">
         <tr role="row">
           {head.map((h, i) => (
-            <th key={h} scope="col" role="columnheader" className={num.includes(i) ? 'num' : undefined}>
+            <th key={h} scope="col" role="columnheader" className={num.includes(i) ? 'num' : undefined} style={i === 0 && firstCol ? { width: firstCol } : undefined}>
               {h}
             </th>
           ))}

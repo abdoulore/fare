@@ -29,6 +29,8 @@ export const PROOF: ProofRow[] = [
 ];
 
 export const CHECK_COMMANDS = `cd scanner && cargo build --release
-./target/release/fare-scanner --dir verify init --network test --uivk <key above> --birthday 4535550
-./target/release/fare-scanner --dir verify scan --from 4535550 --check-transparent
+./target/release/fare-scanner --dir verify init --network test \
+  --uivk <key above> --birthday 4535550
+./target/release/fare-scanner --dir verify scan \
+  --from 4535550 --check-transparent
 ./target/release/fare-scanner --dir verify status`;
