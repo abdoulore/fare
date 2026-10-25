@@ -1,0 +1,156 @@
+{
+  "site": "https://fare.moonrider.online",
+  "at": "2026-10-25T18:26:27.137Z",
+  "issuer_health": {
+    "ok": true,
+    "key_id": "fed4e43313cb3cec0ebbc0715c737fcd3db78c81b80e22d5af93974f75903938",
+    "epoch": 2964,
+    "retires_at": 1793318400,
+    "scanned_to": 4541066
+  },
+  "api_health": {
+    "ok": true,
+    "model": "simulated",
+    "key_id": "fed4e43313cb3cec0ebbc0715c737fcd3db78c81b80e22d5af93974f75903938"
+  },
+  "payer_health": {
+    "ok": true,
+    "balance_zat": 99110000,
+    "empty": false,
+    "network": "test",
+    "packs_left_this_hour": 5
+  },
+  "payment": {
+    "txids": [
+      "584ef994733402213b267c772d0fcfd3b2b93ae7cbec9ba5e5c3d817d477745f"
+    ],
+    "amount_zec": "0.001",
+    "mode": "full",
+    "paid_by": "fare-demo-wallet"
+  },
+  "answers": [
+    "Why does single use matter for a token?\n\nSIMULATED No model API key on this host, so this answer is canned. You asked 39 characters; a real deployment would send them to the model.",
+    "In one sentence, what is a blind signature?\n\nSIMULATED No model API key on this host, so this answer is canned. You asked 43 characters; a real deployment would send them to the model.",
+    "What does a shielded Zcash payment hide?\n\nSIMULATED No model API key on this host, so this answer is canned. You asked 40 characters; a real deployment would send them to the model."
+  ],
+  "ledger": {
+    "scanned_to": 4541068,
+    "rows": [
+      {
+        "height": 4535557,
+        "index": 0,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 100000,
+        "status": "no_record"
+      },
+      {
+        "height": 4535562,
+        "index": 1,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 50000,
+        "status": "no_record"
+      },
+      {
+        "height": 4535836,
+        "index": 2,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 100000,
+        "status": "no_record"
+      },
+      {
+        "height": 4535984,
+        "index": 3,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 100000,
+        "status": "no_record"
+      },
+      {
+        "height": 4536048,
+        "index": 4,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 100000,
+        "status": "no_record"
+      },
+      {
+        "height": 4536052,
+        "index": 5,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 50000,
+        "status": "no_record"
+      },
+      {
+        "height": 4536054,
+        "index": 6,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 100000,
+        "status": "no_record"
+      },
+      {
+        "height": 4536061,
+        "index": 6,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 100000,
+        "status": "no_record"
+      },
+      {
+        "height": 4536656,
+        "index": 7,
+        "payments": 1,
+        "price_zat": 100000,
+        "received_zat": 100000,
+        "status": "paid"
+      },
+      {
+        "height": null,
+        "index": 8,
+        "payments": 0,
+        "price_zat": 100000,
+        "received_zat": 0,
+        "status": "pending"
+      },
+      {
+        "height": 4541068,
+        "index": 9,
+        "payments": 1,
+        "price_zat": 100000,
+        "received_zat": 100000,
+        "status": "paid"
+      }
+    ],
+    "keys": [
+      {
+        "key_id": "fed4e43313cb3cec0ebbc0715c737fcd3db78c81b80e22d5af93974f75903938",
+        "epoch": 2964,
+        "not_before": 1792627200,
+        "retires_at": 1793318400,
+        "packs": 2,
+        "issued": 200
+      }
+    ],
+    "pack": 100,
+    "price_zat": 100000
+  },
+  "origin_stats": {
+    "redeemed": 6,
+    "challenged": 10,
+    "refused": {
+      "token_reused": 2,
+      "bad_signature": 0,
+      "unknown_key": 0,
+      "wrong_challenge": 0,
+      "expired_epoch": 0
+    },
+    "spent_by_key": {
+      "fed4e43313cb3cec": 6
+    }
+  },
+  "external_requests": []
+}
