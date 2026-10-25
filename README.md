@@ -4,7 +4,7 @@ Pay once in shielded ZEC. Then every API call carries a token nobody can link ba
 
 Built for ZECATHON 2026, Shielded Payments track. Runs on Zcash testnet.
 
-**Try it: https://fare.moonrider.online** (Zcash testnet). Buy a pack with the demo payer or your own Ironwood testnet wallet, ask questions, replay a token, and see what the server sees.
+**Try it: https://fare.moonrider.online** (Zcash testnet). [`/app`](https://fare.moonrider.online/app) to buy 100 calls and spend them, [`/developers`](https://fare.moonrider.online/developers) to add Fare to your own API, [`/proof`](https://fare.moonrider.online/proof) to check every claim against chain data and the published key.
 
 ![Fare architecture](docs/architecture.png)
 

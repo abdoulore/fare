@@ -6,7 +6,7 @@ Everything on screen is real testnet. Answers are simulated unless the host has 
 
 - Rerun `sudo ./deploy/setup.sh main` so the site has the latest copy.
 - Check the demo payer has at least two packs (footer: `demo payer 0.99 TAZ`; it allows 2 packs per visitor an hour).
-- Use a fresh browser profile (no stored tokens). Window about 1280 px wide.
+- Use a fresh browser profile (no stored tokens). Window about 1280 px wide. Light or dark scheme both work.
 - Open a terminal on the server (it can reach `testnet.zec.rocks`) for the last scene.
 - Waiting for one confirmation takes about 75 s per payment. Record straight through, then cut the waits down.
 
@@ -14,20 +14,21 @@ Everything on screen is real testnet. Answers are simulated unless the host has 
 
 | Time | Screen | Say |
 | --- | --- | --- |
-| 0:00 | https://fare.moonrider.online landing page | "Fare lets you pay once in shielded ZEC, then call an API with tokens nobody can link back to you, including us. This is Zcash testnet." |
-| 0:12 | `/try`. Type a question, click **Ask without a token**. The 402 panel: offer, key id, "key matches the published directory" | "The API answers 402 Payment Required: 100 calls for 0.001 TAZ. My browser checks the issuer key against the published directory before doing anything." |
-| 0:27 | Click **Buy 100 calls**. Progress bar, "blinded 100 of 100 nonces in this browser". The order panel with the fresh address | "My browser blinds 100 tokens and orders a pack. Fare mints a fresh shielded address for this purchase alone. No memo, no account." |
-| 0:42 | Click **Pay 0.001 TAZ with the demo payer**. The txid appears | "Fare's demo wallet pays it, so you can try this without a testnet wallet. In real use you pay, and Fare never sees your wallet." |
-| 0:52 | The Wait step: pending, in mempool, confirming, paid (cut the wait) | "The scanner holds only a viewing key. It spots the payment in compact blocks by address index: seen in the mempool, then one confirmation. No tokens until then." |
-| 1:07 | "100 tokens unblinded in this browser", counter at 100 | "The issuer signed my blinded requests without seeing them. My browser unblinds 100 tokens and keeps them here." |
-| 1:15 | Click **Ask with one token** three times. Counter 99, 98, 97. Answers marked "simulated" | "Each call spends one token. No key is set on this host, so the answers are simulated, and they say so." |
-| 1:30 | Click **Replay my last token**. Red refusal shakes: 401 token_reused | "Replaying a spent token: refused. Each token works once." |
-| 1:38 | Scroll up, **Start a new purchase** or reload `/try`. Ask, **Buy 100 calls**, then **Pay half (shows underpaid)**. Wait step ends at "underpaid", "No tokens" (cut the wait) | "Now underpay: half the price. It is mined, the scanner sees it is short, and the issuer signs nothing." |
-| 2:00 | `/server`. Issuer table on the left with +N paid and +N+1 underpaid, the empty "no link" column, API counts on the right, the dot grid | "This is what the server sees. Left, purchases: index, amount, height, status. Right, calls: counts only. The middle column is empty on purpose: no shared id, and blind signatures keep a token from being matched to its purchase." |
-| 2:20 | Point at the dots, then the residuals list | "My tokens hide among every token under this key: these dots. What Fare does not hide is listed right here: IP and timing, a small set, the question itself." |
-| 2:32 | Terminal: `fare-scanner --dir verify init --network test --uivk <published key> --birthday 4535550`, then `scan --from 4535550`, then `status` | "Anyone can check the payments. With only the published viewing key, no seed, this verifier scans the chain and lists every payment to the demo merchant by index: the paid one, the underpaid one, and earlier runs." |
-| 2:50 | `/proof`, click one txid, the explorer page: fee, 2 Ironwood actions, nothing else | "On a public explorer, each payment is just a fee and encrypted actions. Paid or underpaid, they look the same." |
-| 2:58 | Landing page | "Fare. Pay once, call privately." |
+| 0:00 | https://fare.moonrider.online home: the vermilion sheet, the headline, the stamp with the middleware and its live postmark | "Fare lets an API charge per call and never learn who paid. The postmark on this stamp is a live check: the hosted API answered 402, and its key matches the published directory. This is Zcash testnet." |
+| 0:15 | Scroll to "One sheet, torn in two" | "The issuer sees purchases. The API sees calls. Nothing runs between them." |
+| 0:22 | Click **Try it with a demo payment** (to `/app`). Click **Ask without a token**. The 402 panel: offer, key, "key matches the published directory" | "As a buyer: the API asks for payment, 100 calls for 0.001 TAZ. My browser checks the issuer key before doing anything." |
+| 0:35 | Click **Buy 100 calls**. "blinded 100 of 100 in this browser". The fresh address | "My browser blinds 100 tokens and orders a sheet. Fare mints a fresh shielded address for this purchase alone. No memo, no account." |
+| 0:48 | Click **Pay 0.001 TAZ with the demo payer**. The txid appears | "Fare's demo wallet pays, so anyone can try this. In real use you pay from your own wallet, and Fare never sees it." |
+| 0:58 | Wait step: pending, mempool, confirming, paid (cut the wait). The receipt and "Your sheet" at 100 | "The scanner holds only a viewing key and spots the payment by address. One confirmation, then the issuer signs my blinded requests without seeing them: 100 stamps, in this browser." |
+| 1:13 | Click **Ask with one token** three times. One stamp struck per call. Answers marked "simulated" | "Each call cancels one stamp. No model key on this host, so the answers are simulated, and say so." |
+| 1:27 | Click **Replay my last token**. The red "already cancelled" postmark: 401 token_reused | "A replay hits a stamp that is already cancelled. Refused." |
+| 1:35 | Open **Test the refusals**, start a new purchase (**Buy another sheet**), then **Pay half (shows underpaid)**. Wait ends at "postage due", "No tokens from this purchase" (cut the wait) | "Underpay by half: it is mined, the scanner sees it is short, postage due. The issuer signs nothing." |
+| 1:55 | `/proof`, live ledger: purchases on the left, the "no link" perforation, calls on the right, the pane of stamps | "Here is what the servers see. Purchases by index, amount and height. Calls as counts. The perforation in the middle is empty on purpose: blind signatures keep a token from being matched to its purchase." |
+| 2:15 | Point at the pane, then "What Fare does not hide" | "A token hides among every stamp under this key. What Fare does not hide is listed: IP and timing, a small set, the question itself." |
+| 2:27 | Terminal: the watch-only verifier with the published key (`init --uivk`, `scan`, `status`) | "Anyone can check the payments: with only the published viewing key, this verifier lists every payment to the demo merchant by index." |
+| 2:42 | `/proof`, click a txid: the explorer page, a fee and two encrypted actions | "On a public explorer each payment is a fee and encrypted actions. Paid or underpaid, they look the same." |
+| 2:50 | `/developers`, the quick start | "And to charge for your own API: wrap your handler, run the issuer and the scanner." |
+| 2:57 | Home | "Fare. Charge per call, never learn who paid." |
 
 ## Commands for the verifier scene
 

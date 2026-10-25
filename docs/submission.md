@@ -12,7 +12,7 @@ How it works: the API answers 402 with a price. Your browser blinds 100 tokens a
 
 The issuer sees purchases, the API sees tokens, and they share no identifier. Blind signatures stop anyone, the operator included, from matching a token to the purchase that paid for it. The README lists what Fare does not hide: IP and timing correlation, a small anonymity set, request content.
 
-Try it on testnet: https://fare.moonrider.online (Fare's demo wallet can pay for you; the page says so).
+Try it on testnet: https://fare.moonrider.online/app (Fare's demo wallet can pay for you; the page says so). Add it to your own API: https://fare.moonrider.online/developers
 
 Proof: real testnet transactions for a paid purchase, an underpaid one (no tokens issued) and a second payment (still exactly 100 tokens), each on a public explorer showing only a fee: https://github.com/abdoulore/fare#testnet-proof
 
