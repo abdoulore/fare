@@ -66,7 +66,7 @@ for (const path of ['/developers', '/proof']) {
     await expect(page.locator('h1')).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     const clipped = await page.evaluate(() =>
-      [...document.querySelectorAll('main table')].filter((t) => t.getBoundingClientRect().right > window.innerWidth + 1 || t.scrollWidth > t.clientWidth + 1).map((t) => t.textContent?.slice(0, 40)),
+      [...document.querySelectorAll('main table')].filter((t) => t.getBoundingClientRect().right > window.innerWidth + 1 || t.getBoundingClientRect().width > (t.parentElement?.clientWidth ?? 0) + 1).map((t) => t.textContent?.slice(0, 40)),
     );
     expect(clipped).toEqual([]);
     for (const block of await page.locator('.code-block').all()) {

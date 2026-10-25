@@ -94,7 +94,7 @@ export function Proof() {
                       <tr>
                         <th scope="col">Index</th>
                         <th scope="col" className="num">
-                          Received (TAZ)
+                          TAZ
                         </th>
                         <th scope="col" className="num">
                           Height
