@@ -30,11 +30,11 @@ npm test            # 11 tests, end to end with the real issuer and SDK
 | Signature verifies | `bad_signature` |
 | Nonce not spent | `token_reused` |
 
-- The nonce is marked spent only after every other check passes, with no await between the check and the insert, so one token sent twice at once is served once.
+- The nonce is marked spent only after every other check passes, by creating `spent/<key id>/<nonce>` with O_CREAT | O_EXCL. Creation is atomic, so one token sent twice at once is served once, even to several origin processes sharing the data directory on one host. Several hosts would need a shared database; that is not supported.
 - Keys come from the issuer's public directory, refreshed every 5 minutes and when a token names a key the origin has not seen. Unreachable directory: `503`, nothing served.
 
 ## Privacy
 
 - The origin shares nothing with the issuer but the public directory (invariant 7). It never sees a purchase or a payment.
-- `origin-data/spent/<key id>.txt` holds spent nonces, one per line. No time, no client address, no request content (invariant 8).
+- `origin-data/spent/<key id>/<nonce>` is one empty file per spent nonce. No time, no client address, no request content (invariant 8). Nonces in the older `spent/<key id>.txt` files are copied into this layout at start, and the old files are kept.
 - It logs nothing. A test fails the build if the source logs, reads client identity, or mentions purchases.

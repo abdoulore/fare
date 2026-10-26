@@ -224,6 +224,11 @@ export function Developers() {
             <ul>
               <li>One pack size, 100 calls for 0.001 TAZ. The issuer refuses any other count.</li>
               <li>Tokens are signed after one confirmation (about 75 s), never from the mempool.</li>
+              <li>
+                The spent set is one empty file per nonce, created atomically, so several origin processes on one host can share a data directory and a token still works once.
+                Several hosts would need a shared database; that is not supported.
+              </li>
+              <li>Clients save each order before it is paid, so a closed page or a crashed agent can collect its tokens later.</li>
               <li>Issuer keys rotate every 7 days; the previous key stays valid for 24 hours. Clients follow a rotation only through the directory.</li>
               <li>The scanner listens on loopback only and logs nothing about requests. Keep it off the public network.</li>
               <li>

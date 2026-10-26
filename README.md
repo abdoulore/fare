@@ -160,10 +160,10 @@ To host it: [`deploy/README.md`](deploy/README.md).
 | `scanner/` (Rust) | Payment detection, `serve` sidecar with an id-free ledger, watch-only verifier. 36 tests, clippy clean |
 | `wallet/` (Rust) | `fare-wallet`, headless testnet payer. 26 tests, clippy clean |
 | `issuer/` (TypeScript) | Purchases API, 7-day epoch keys, native blind signing, CORS, public ledger. 23 tests |
-| `sdk/` (TypeScript) | Pin, 402 handling, order, collect, spend, follows key rotation; browser-safe core. 14 tests |
-| `origin/` (TypeScript) | 402 challenge, invariant 9 redemption checks, spent-nonce store. 12 tests |
+| `sdk/` (TypeScript) | Pin, 402 handling, order, collect, spend, follows key rotation; orders saved before payment, atomic state updates; browser-safe core. 18 tests |
+| `origin/` (TypeScript) | 402 challenge, invariant 9 redemption checks, spent set shared safely by processes on one host. 14 tests |
 | `demo/` (TypeScript) | LLM proxy behind the origin, paying agent, loopback panel, demo payer. 18 tests |
-| `web/` (TypeScript, React) | The frontend. 9 unit tests, 22 browser tests (flow, refusals, layout, keyboard, accessibility) |
+| `web/` (TypeScript, React) | The frontend. 14 unit tests, 27 browser tests (flow, refusals, recovery after a closed tab, two tabs, layout, keyboard, accessibility) |
 | `token-canary/` (Node) | Privacy Pass proof: 100 tokens, 11 of 11 checks |
 
 CI runs every test on every push. The testnet workflows (`.github/workflows/testnet-*.yml`) run the chain-facing parts on GitHub runners.

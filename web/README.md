@@ -17,7 +17,7 @@ The look is "Sheet of stamps" (owner decision, Oct 25): a pack is a sheet of 100
 
 - **Tokens are made here.** The browser runs `sdk/src/core.ts`: it pins the issuer directory's key, refuses a 402 naming any other, blinds 100 nonces, unblinds the signatures and stores the tokens in IndexedDB. The issuer only sees blinded requests; the API only sees tokens.
 - **Nothing from a third party.** Fonts (Big Shoulders Display, Atkinson Hyperlegible Next, Martian Mono; all OFL) are bundled, there is no analytics and no CDN. The Content-Security-Policy allows this origin plus the API, issuer and payer URLs fixed at build time.
-- **No purchase ids in public.** The purchase id stays in the tab that made it. The server view shows index offsets only.
+- **No purchase ids in public.** The purchase id stays in this browser's IndexedDB, with the order, until the tokens are collected. The server view shows index offsets only.
 - **The demo payer says it paid.** When it pays, the page says so, and the server view lists it as a residual.
 
 ## Run it
@@ -25,7 +25,7 @@ The look is "Sheet of stamps" (owner decision, Oct 25): a pack is a sheet of 100
 ```
 npm ci
 npm test                      # Vitest: status mapping, CSP, pinning, IndexedDB storage and spending
-npx playwright test           # builds, starts e2e/stack.ts, runs 22 browser tests
+npx playwright test           # builds, starts e2e/stack.ts, runs 27 browser tests
 npm run dev                   # http://127.0.0.1:5173 against local services
 ```
 
@@ -37,6 +37,7 @@ npm run dev                   # http://127.0.0.1:5173 against local services
 
 ## Known residuals of the hosted demo
 
-- The blinding state lives in the tab. Closing it before the payment confirms loses the pack.
+- An order and its blinding state are saved in IndexedDB before it can be paid; a tab closed after paying collects the tokens on the next visit. A browser that refuses IndexedDB (some private windows) keeps them in the tab only, and the page warns before leaving.
+- Tabs share one store: each change is one IndexedDB transaction, and a BroadcastChannel (same origin, this device) refreshes the other tabs.
 - One operator runs the issuer, the API and the demo payer on one host. See the README's residuals.
 - `npm audit` flags `sjcl` (pulled in by `@cloudflare/privacypass-ts`) for missing point validation in its ECC code. Fare's tokens use RSA only, so that code path never runs.

@@ -29,5 +29,6 @@ npm run typecheck
 
 - `pin()` pins the directory's first type 2 key when nothing is pinned, or when the directory no longer lists the pinned one.
 - Tokens live in `stateFile` (mode 0600) with the challenge they redeem against. A token is removed from the file before the request carrying it is sent: a crash can lose a token, never reuse one.
-- Blinding state stays in memory: the process that ordered a pack must be the one that collects it.
-- `collect()` stops on `expired`, `key_retired` or a timeout, and stores nothing.
+- `order()` saves the order and each token's blinding state (token input and blinding inverse) in the state before it returns, so before anyone pays. After a crash, a new client lists it with `pendingPurchases()` and finishes it with `collect()`. The blinding state never leaves the client.
+- Every change is one atomic read-modify-write on a `StateStore` (a JSON file here, an IndexedDB transaction in a browser). Two clients on one store never take the same token or collect one order twice. Two Node processes sharing one state file are not supported.
+- `collect()` stops on `expired`, `key_retired` or a timeout, stores nothing, and drops the saved order when it can never complete. `forget()` keeps saved orders: one may be paid already.
