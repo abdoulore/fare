@@ -134,6 +134,9 @@ jobs:
       - run: npm test --prefix web
       - run: npx playwright install --with-deps chromium
         working-directory: web
+        # Normally about 20 s. On Oct 26 it stalled for over 15 minutes, twice;
+        # fail fast instead, so a re-run can be started.
+        timeout-minutes: 10
       - run: npx playwright test
         working-directory: web
       # Dev-time design check (impeccable, telemetry off); never shipped to buyers.
