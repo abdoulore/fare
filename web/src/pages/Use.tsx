@@ -99,6 +99,8 @@ export function Use() {
   const [issued, setIssued] = useState<number>();
 
   const [elsewhere, setElsewhere] = useState(false);
+  // Set by "Buy another sheet": shows the buy panel while tokens remain.
+  const [buyMore, setBuyMore] = useState(false);
   const [resumed, setResumed] = useState(false);
   const [replay, setReplay] = useState<Exchange>();
 
@@ -188,6 +190,7 @@ export function Use() {
             setElsewhere(true);
           }
           setIssued(n || purchase.blinds.length);
+          setBuyMore(false);
           setCounterTick((t) => t + 1);
           requestAnimationFrame(() => useHeading.current?.focus());
           await refreshGroups();
@@ -380,6 +383,12 @@ export function Use() {
     }
   }
 
+  /** Opens the buy panel for a further sheet, whether or not tokens remain. */
+  function buyAnother() {
+    reset();
+    setBuyMore(true);
+  }
+
   function reset() {
     // A dead order (expired, underpaid) is forgotten; a paid one already left the store.
     if (purchase && status?.final && client) void client.drop(purchase);
@@ -420,7 +429,7 @@ export function Use() {
   const canUse = usable > 0;
   const dead = status?.final === true;
   const seenOnChain = (status?.step ?? 0) >= 1;
-  const buying = !canUse || (ordered && !paid);
+  const buying = !canUse || (ordered && !paid) || buyMore;
   const stepClass = (n: number) => {
     const reached = [true, ordered, ordered && (payment !== undefined || seenOnChain || resumed)][n - 1];
     const finished = [ordered, payment !== undefined || seenOnChain, paid][n - 1];
@@ -826,10 +835,17 @@ export function Use() {
                   <strong>Flagged.</strong> This payment spent transparent inputs, which exposed the payer's own address on chain.
                 </div>
               )}
-              <button type="button" className="link" onClick={reset}>
+              <button type="button" className="link" onClick={buyAnother}>
                 Buy another sheet
               </button>
             </section>
+          )}
+          {!buying && !(ordered && paid) && (
+            <p>
+              <button type="button" className="link" onClick={buyAnother}>
+                Buy another sheet
+              </button>
+            </p>
           )}
           {!buying && (
             <>

@@ -213,3 +213,24 @@ test('home shows a live 402 from the API with the key checked against the direct
   await expect(page.getByRole('img', { name: /hosted API answered 402 Payment Required, 100 calls for 0.001 TAZ, and its key matches the published directory/ })).toBeVisible();
   await expect(page.getByTestId('hero-stamp')).toContainText("createOrigin");
 });
+
+test('a holder can buy another sheet, before and after a reload', async ({ page }) => {
+  await ask(page);
+  await buy(page);
+  await page.getByRole('button', { name: 'Pay 0.001 TAZ with the demo payer' }).click();
+  await expect(page.getByTestId('tokens-left')).toHaveText('100');
+
+  // From the receipt: the buy panel comes back although 100 tokens remain.
+  await page.getByTestId('receipt').getByRole('button', { name: 'Buy another sheet' }).click();
+  await expect(page.getByRole('button', { name: 'Buy 100 calls' })).toBeEnabled();
+  await buy(page);
+  await page.getByRole('button', { name: 'Pay 0.001 TAZ with the demo payer' }).click();
+  await expect(page.getByTestId('tokens-total')).toHaveText('200 unspent', { timeout: 30_000 });
+  await expect(page.getByTestId('receipt')).toBeVisible();
+
+  // After a reload there is no receipt; the sheet panel offers the same.
+  await page.reload();
+  await expect(page.getByTestId('tokens-total')).toHaveText('200 unspent');
+  await page.getByRole('button', { name: 'Buy another sheet' }).click();
+  await expect(page.getByRole('button', { name: 'Buy 100 calls' })).toBeEnabled();
+});
