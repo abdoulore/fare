@@ -1,6 +1,6 @@
 # Fare
 
-Pay once in shielded ZEC. Then every API call carries a token nobody can link back to you, including the API.
+Pay once in shielded ZEC. Then every API call carries a single-use token that neither the API nor the issuer that sold it can match to your payment. Tokens do not hide your IP address, the timing of your requests or what you ask; see [Residuals](#residuals).
 
 Built for ZECATHON 2026, Shielded Payments track. Runs on Zcash testnet.
 

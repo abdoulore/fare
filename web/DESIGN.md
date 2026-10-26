@@ -1,6 +1,6 @@
 ---
 name: Fare
-description: Pay once in shielded ZEC, then call an API with tokens nobody can link back to you.
+description: Pay once in shielded ZEC, then call an API with tokens that cannot be matched to your payment.
 colors:
   sheet-paper: "#f6f7f5"
   stamp-white: "#ffffff"
@@ -118,12 +118,12 @@ components:
 
 A pack is a sheet of 100 stamps, and every call cancels one with a postmark that names no sender. The site is built from the materials of philately: gummed sheet paper, perforations, condensed stamp lettering, sheet-margin inscriptions in small mono capitals, and the postmark's double ring with its wavy bars. Each side of the product owns one ink. The buyer's side and the primary action are vermilion, the developer and issuer side ultramarine, proof and cancellations postmark blue-black, and paid is stamp green.
 
-The surfaces are flat and printed. Depth comes from paper on paper (white stamps and panels on a cool sheet, or mounted on a black album page in the dark scheme), never from shadows. Each route opens on a full-bleed sheet margin in its side's ink, perforated along its lower edge, then settles into a calm reading or working column. Motion is limited to the ink: a postmark presses and its bars strike on, a refused replay bounces, a counter ticks. Reduced motion removes all of it.
+The surfaces are flat and printed. Depth comes from paper on paper (white stamps and panels on a cool sheet, or mounted on a black album page in the dark scheme), never from shadows. Each route opens on a sheet margin of plain paper with dark lettering, its inscription and a closing row of perforations in its side's ink, then settles into a calm reading or working column. Colour is kept for actions and selected details, so the paper dominates (owner, Oct 26: the full vermilion fields were too loud). Motion is limited to the ink: a postmark presses and its bars strike on, a refused replay bounces, a counter ticks. Reduced motion removes all of it.
 
 The site refuses the crypto default (dark, neon, coins, padlocks), the cream editorial look, and the SaaS dashboard of metric cards and sidebars. State is named in postal terms: postage due (underpaid), already cancelled (a replayed token), returned (a key the directory does not list).
 
 **Key Characteristics:**
-- One ink per side of the product, fixed in both schemes on the sheet margins.
+- One ink per side of the product, carried by inscriptions, perforation rows, actions and details, never by a full-bleed field.
 - Perforation is the only divider device: stamp edges, margin edges, the "no link" seam, rails and section rules.
 - Stamps and panels are paper in both schemes; they carry the light inks locally.
 - Display lettering is condensed, uppercase and heavy; reading text is Atkinson at a 34em measure.
@@ -134,7 +134,7 @@ The site refuses the crypto default (dark, neon, coins, padlocks), the cream edi
 Four printing inks on cool white paper, with a black album page for the dark scheme.
 
 ### Primary
-- **Vermilion** (`{colors.vermilion}`): the buyer's side and the primary action. Home and App sheet margins, primary buttons, stamps in a pane, refusals and the replay postmark. In dark mode the page uses Album Vermilion for text and lines on black, while margins keep the print value.
+- **Vermilion** (`{colors.vermilion}`): the buyer's side and the primary action. Home and App inscriptions and perforation rows, primary buttons, the logo, the frame of Home's code stamp, stamps in a pane, refusals and the replay postmark. In dark mode the page uses Album Vermilion for text and lines on black, while margins keep the print value.
 
 ### Secondary
 - **Ultramarine** (`{colors.ultramarine}`): the developer and issuer side. The Developers masthead and header, its rail and section perforations, the Developers button, the dashed "publishes its key" line, focus rings and text selection.
@@ -151,7 +151,7 @@ Four printing inks on cool white paper, with a black album page for the dark sch
 - **Album Black** (`{colors.album-black}`) with **Album Paper** (`{colors.album-paper}`): the dark scheme's page and the paper mounted on it.
 
 ### Named Rules
-**The One Ink Per Side Rule.** A route's sheet margin and its accents take the ink of the side it serves: vermilion for Home and App, ultramarine for Developers, postmark ink for Proof. Do not mix a second accent into a margin.
+**The One Ink Per Side Rule.** A route's inscription, perforation row and accents take the ink of the side it serves: vermilion for Home and App, ultramarine for Developers, postmark ink for Proof. Do not mix a second accent into a margin.
 
 **The Paper Stays Paper Rule.** Stamps, panels, code blocks and figures keep their light inks in the dark scheme. They are paper mounted on the album page, not dark cards.
 
@@ -166,7 +166,7 @@ Four printing inks on cool white paper, with a black album page for the dark sch
 **Character:** Condensed, heavy stamp lettering for every heading, set uppercase and tight, against a hyperlegible reading face. Martian Mono plays the sheet-margin inscription: serial numbers, prices, labels, code and status. All three are OFL and self-hosted.
 
 ### Hierarchy
-- **Display** (800, `clamp(2.6rem, 7vw, 4.6rem)`, 0.98): the one h1 per route, white on its sheet margin.
+- **Display** (800, `clamp(2.6rem, 7vw, 4.6rem)`, 0.98): the one h1 per route, in ink on the paper sheet margin.
 - **Headline** (800, `clamp(1.9rem, 4.6vw, 3rem)`, 0.98): section headings on Home; `clamp(1.7rem, 3.6vw, 2.4rem)` inside documents and 1.8rem inside app panels.
 - **Title** (800, 1.45rem): step and door headings.
 - **Body** (400, 1.0625rem, 1.6): reading text, held to a 34em measure; the lede is 1.2rem at 30em.
@@ -180,7 +180,7 @@ Four printing inks on cool white paper, with a black album page for the dark sch
 
 ## Layout
 
-A single 1120px column with 16px gutters on phones and 32px from 760px. Each route opens on a full-bleed sheet margin (Home's carries the pitch and the code stamp, the others a heading, lede and inscription), perforated along its lower edge with 6px semicircles every 18px. Home continues in 56px bands divided by hairlines. Developers and Proof are documents: a 220px sticky table of contents on a perforated rail beside the reading column from 960px, sections divided by a perforated rule. App is a working grid, the purchase and use panels at 1.4fr beside the buyer's sheet at 1fr from 960px, one column below.
+A single 1120px column with 16px gutters on phones and 32px from 760px. Each route opens on a paper sheet margin (Home's carries the pitch and the code stamp, the others a heading, lede and inscription), closed by a row of 2.4px perforation dots every 13px in the side's ink. Home continues in 56px bands divided by hairlines. Developers and Proof are documents: a 220px sticky table of contents on a perforated rail beside the reading column from 960px, sections divided by a perforated rule. App is a working grid, the purchase and use panels at 1.4fr beside the buyer's sheet at 1fr from 960px, one column below.
 
 The issuer and the API are always shown as two halves of one sheet torn along a perforation labelled "no link": side by side from 860px (the issuer half wider on Proof), stacked with a horizontal seam below. Tables become labelled cards below 640px. Proof's transactions set each label beside its value. No route scrolls sideways at 375px, which a test holds.
 
@@ -193,7 +193,7 @@ Flat by design. There are no box shadows anywhere. Depth is paper on paper: Stam
 
 ## Shapes
 
-Corners are nearly square: 3px on buttons, fields, panels and code blocks, 2px on tags. The signature silhouette is the perforation, drawn with a CSS mask (round holes cut along the padding box, the content box solid) on stamps and pane stamps, as semicircle bites along sheet-margin edges, and as dot rows for seams, rails and dividers. The postmark is a 2.6px outer ring and 1.4px inner ring with text on both half arcs and five wavy bars.
+Corners are nearly square: 3px on buttons, fields, panels and code blocks, 2px on tags. The signature silhouette is the perforation, drawn with a CSS mask (round holes cut along the padding box, the content box solid) on stamps and pane stamps, and as dot rows for sheet-margin edges, seams, rails and dividers. The postmark is a 2.6px outer ring and 1.4px inner ring with text on both half arcs and five wavy bars.
 
 ## Components
 
@@ -202,8 +202,7 @@ Corners are nearly square: 3px on buttons, fields, panels and code blocks, 2px o
 - **Primary:** Vermilion with white text; hover mixes 12% black into the vermilion.
 - **Default:** transparent with a 1.5px Postmark Ink border; hover tints 8% ink.
 - **Developer:** Ultramarine with white text, used for the way into Developers.
-- **On a margin:** the primary becomes white paper with ink text, the secondary a white outline.
-- **Focus:** a 2px outline in the focus ink (ultramarine, white on margins) at 3px offset.
+- **Focus:** a 2px outline in the focus ink (ultramarine) at 3px offset.
 
 ### Tags
 - **Style:** Martian Mono 600 at 0.76rem, uppercase, 1.5px border in currentColor, 2px corners. They wrap rather than overflow, and never wrap inside a table cell.
@@ -211,14 +210,14 @@ Corners are nearly square: 3px on buttons, fields, panels and code blocks, 2px o
 
 ### Cards / Containers
 - **Panel:** Stamp White, 1px Perforation Line border, 3px corners, 20px padding. App panels hold steps, the ask box, the sheet and the receipt.
-- **Stamp:** Stamp White with a perforated mask edge (5px holes on a 15px pitch) and 14px by 16px inner padding. Home's code stamp is the only large one.
+- **Stamp:** Stamp White with a perforated mask edge (5px holes on a 15px pitch) and 14px by 16px inner padding. Home's code stamp is the only large one; it is printed in a vermilion frame (the perforated rim plus a 7px border) around its white design.
 
 ### Inputs / Fields
 - **Style:** 1.5px Perforation Edge border, 3px corners, 11px by 13px padding, the page or paper as fill.
 - **Focus:** the shared focus outline. The caret and checkbox accent are vermilion.
 
 ### Navigation
-- **Style:** Martian Mono 500 at 0.78rem, uppercase, 0.06em tracking, set as margin inscription at the right of the header. The current route and hover carry a 2px underline in currentColor. On a margin the header takes the margin's ink with white text. On phones the nav wraps under the mark.
+- **Style:** Martian Mono 500 at 0.78rem, uppercase, 0.06em tracking, set as margin inscription at the right of the header. The current route and hover carry a 2px underline in currentColor. On phones the nav wraps under the mark.
 
 ### Postmark
 The signature mark. A double ring with fitted inscriptions on both half arcs, a center line and five wavy cancellation bars. It presses in (0.32s) and its bars strike on (0.5s) once when mounted. Tones: ink (cancel), vermilion (refused) and green (paid). It is the live 402 check on Home and the "already cancelled" replay bounce in App, always with role img and a full sentence label.
@@ -232,7 +231,8 @@ A paper bar above the code with its file or context name in mono capitals and th
 ## Do's and Don'ts
 
 ### Do:
-- **Do** open every route on a sheet margin in its side's ink, perforated along its lower edge.
+- **Do** open every route on a paper sheet margin, its inscription and perforation row in the side's ink.
+- **Do** keep colour for actions and selected details: red for primary actions and the stamps, blue for developer content, green for paid.
 - **Do** show the issuer and the API as two halves torn along a "no link" perforation whenever both appear.
 - **Do** name state in postal terms beside its color: postage due, already cancelled, returned, paid.
 - **Do** keep stamps, panels, code and figures on light paper in the dark scheme.
@@ -240,6 +240,7 @@ A paper bar above the code with its file or context name in mono capitals and th
 - **Do** label anything simulated on the element itself (the "simulated" tag on every canned answer).
 
 ### Don't:
+- **Don't** fill a sheet margin or header with a full-bleed ink field.
 - **Don't** use cream, warm beige or editorial off-white grounds. Sheet Paper is cool white.
 - **Don't** use the crypto default: dark neon, coins, padlocks, glowing gradients.
 - **Don't** build a dashboard of metric cards or a sidebar shell.

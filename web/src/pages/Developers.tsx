@@ -93,7 +93,7 @@ export function Developers() {
         <div className="wrap">
           <h1>Accept Fare on your API</h1>
           <p className="lede">
-            Wrap your handler, run an issuer and a scanner beside it, and every call to your API is paid for with a single-use token you can verify but cannot trace to a buyer.
+            Wrap your handler, run an issuer and a scanner beside it, and every call to your API is paid for with a single-use token you can verify but cannot match to the payment that bought it.
           </p>
           <p className="selvage">
             <span>Developers</span>

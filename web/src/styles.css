@@ -119,11 +119,10 @@ main p.selvage { max-width: none; }
 
 /* Header: the mark and the routes, set as the sheet's top margin. */
 header.site { border-bottom: 1px solid var(--line); background: var(--paper); }
-header.site.on-field { background: #c2341d; color: #ffffff; border-bottom: none; --vermilion: #c2341d; --on-vermilion: #ffffff; --focus: #ffffff; }
 header.site .wrap { display: flex; align-items: center; justify-content: space-between; gap: 6px 20px; min-height: 64px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; }
 .mark { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 800 1.6rem/1 var(--display); text-transform: uppercase; letter-spacing: 0.02em; }
 .mark svg { width: 30px; height: 30px; flex: none; }
-.on-field .mark { --mark-dot: var(--vermilion); }
+.mark svg { color: var(--vermilion); }
 nav.main { display: flex; flex-wrap: wrap; gap: 2px 4px; margin: 0 -10px; }
 nav.main a { text-decoration: none; padding: 8px 10px; font: 500 0.78rem/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 2px solid transparent; }
 nav.main a[aria-current='page'] { border-bottom-color: currentColor; }
@@ -142,7 +141,6 @@ button, .button {
 button:hover:not(:disabled), .button:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
 button.primary, .button.primary { background: var(--vermilion); color: var(--on-vermilion); border-color: var(--vermilion); }
 button.primary:hover:not(:disabled), .button.primary:hover { background: color-mix(in srgb, var(--vermilion) 88%, black); }
-.on-field .button.primary, .button.on-vermilion { background: var(--sheet); color: var(--sheet-ink); border-color: var(--sheet); }
 .button.dev, button.dev { background: var(--ultra); color: var(--on-ultra); border-color: var(--ultra); }
 button:disabled { cursor: not-allowed; color: var(--muted); border-color: var(--line); background: transparent; }
 button.primary:disabled { background: transparent; color: var(--muted); border-color: var(--line); }
@@ -219,21 +217,18 @@ textarea { min-height: 88px; resize: vertical; }
 .pane i.spent { background: color-mix(in srgb, var(--vermilion) 62%, var(--paper)); }
 .pane i.spent::after { content: ''; position: absolute; inset: 0; background: url('/cancel.svg') center / 100% 100% no-repeat; }
 
-/* Home: the vermilion sheet margin, perforated along its lower edge. */
-.field { overflow-x: clip; --vermilion: #c2341d; --on-vermilion: #ffffff; --focus: #ffffff; background: var(--vermilion); color: var(--on-vermilion); position: relative; padding: 18px 0 72px; }
-.field::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 14px;
-  background: radial-gradient(circle at 50% 100%, var(--paper) 6px, transparent 6.5px) 0 0 / 18px 14px repeat-x;
-}
-.field .selvage { color: var(--on-vermilion); margin: 36px 0 0; }
+/* Home: the sheet margin on paper, ending in a row of vermilion perforations. Red is kept
+   for the actions, the stamp's frame and the inscriptions. */
+.field { overflow-x: clip; position: relative; padding: 26px 0 64px; }
+.field, .masthead { background: radial-gradient(circle, var(--side, var(--vermilion)) 2.4px, transparent 2.9px) 0 100% / 13px 10px repeat-x; }
+.field .selvage { color: var(--vermilion); margin: 36px 0 0; }
+.hero-limit { margin-top: 4px; max-width: 34em; color: var(--muted); font-size: 0.95rem; }
 .hero { display: grid; gap: 32px; grid-template-columns: minmax(0, 1fr); align-items: start; }
 @media (min-width: 980px) { .hero { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 48px; } }
-.hero h1 { color: var(--on-vermilion); }
 .hero .lede { margin-top: 20px; }
 .hero .actions { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 12px; }
-.hero .button.ghost { color: var(--on-vermilion); border-color: var(--on-vermilion); }
-.hero .button.ghost:hover { background: color-mix(in srgb, var(--on-vermilion) 14%, transparent); }
-.hero-stamp { position: relative; margin-top: 6px; }
+.hero-stamp { position: relative; margin-top: 6px; background: #c2341d; }
+.hero-stamp > .stamp-in { background: #ffffff; border: 7px solid #c2341d; }
 .hero-stamp pre { margin: 12px 0 14px; padding: 0; background: none; color: var(--sheet-ink); font-size: 0.74rem; line-height: 1.75; overflow-x: auto; white-space: pre; }
 .hero-stamp .denomination { display: grid; gap: 2px; border-bottom: 1.5px solid #1b2232; padding-bottom: 10px; min-height: 104px; align-content: end; padding-right: 150px; }
 .hero-stamp .denomination b { font: 800 2.3rem/1 var(--display); text-transform: uppercase; }
@@ -335,21 +330,14 @@ details.more > summary { cursor: pointer; font-weight: 700; list-style-position:
 details.more[open] > summary { margin-bottom: 10px; }
 .confirm { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
-/* Developers and Proof: documents framed by a sheet margin in their side's ink, ultramarine
-   for developers and the issuer side, postmark blue-black for proof. Fixed in both schemes. */
-.masthead.buyer { background: #c2341d; --vermilion: #c2341d; }
-header.site.on-field.dev, .masthead.dev { background: #2b3f9e; }
-header.site.on-field.ink, .masthead.ink { background: #1b2232; }
-header.site.on-field.dev .mark { --mark-dot: #2b3f9e; }
-header.site.on-field.ink .mark { --mark-dot: #1b2232; }
-.masthead { color: #ffffff; --focus: #ffffff; position: relative; padding: 30px 0 58px; }
-.masthead::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 14px;
-  background: radial-gradient(circle at 50% 100%, var(--paper) 6px, transparent 6.5px) 0 0 / 18px 14px repeat-x;
-}
-.masthead h1 { color: #ffffff; }
+/* App, Developers and Proof: the sheet margin on paper, its inscription and perforation row
+   in the side's ink: vermilion for buyers, ultramarine for developers, postmark ink for proof. */
+.masthead { position: relative; padding: 30px 0 50px; }
+.masthead.buyer { --side: var(--vermilion); }
+.masthead.dev { --side: var(--ultra); }
+.masthead.ink { --side: var(--ink); }
 .masthead .lede { margin-top: 18px; }
-.masthead a { color: #ffffff; }
+.masthead .selvage { color: var(--side); }
 .masthead .selvage, .app-head .selvage { margin: 26px 0 0; }
 .app-head .selvage { color: var(--muted); }
 .doc { display: grid; gap: 28px; grid-template-columns: minmax(0, 1fr); padding-top: 30px; padding-bottom: 70px; }

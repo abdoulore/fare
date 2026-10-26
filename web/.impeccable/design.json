@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-25T18:06:07+00:00",
+  "generatedAt": "2026-10-26T08:42:57+00:00",
   "title": "Design System: Fare",
   "extensions": {
     "colorMeta": {
@@ -249,7 +249,7 @@
       "kind": "nav",
       "description": "Routes set as a sheet-margin inscription; the current one underlined.",
       "html": "<nav class=\"ds-nav\"><a href=\"#\" aria-current=\"page\">App</a><a href=\"#\">Developers</a><a href=\"#\">Proof</a></nav>",
-      "css": ".ds-nav { display: flex; gap: 4px; background: #c2341d; padding: 12px; } .ds-nav a { color: #ffffff; text-decoration: none; padding: 8px 10px; font: 500 0.78rem/1 'Martian Mono Variable', ui-monospace, monospace; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 2px solid transparent; } .ds-nav a[aria-current='page'], .ds-nav a:hover { border-bottom-color: currentColor; } .ds-nav a:focus-visible { outline: 2px solid #ffffff; outline-offset: 3px; }"
+      "css": ".ds-nav { display: flex; gap: 4px; background: #f6f7f5; padding: 12px; } .ds-nav a { color: #1b2232; text-decoration: none; padding: 8px 10px; font: 500 0.78rem/1 'Martian Mono Variable', ui-monospace, monospace; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 2px solid transparent; } .ds-nav a[aria-current='page'], .ds-nav a:hover { border-bottom-color: currentColor; } .ds-nav a:focus-visible { outline: 2px solid #2b3f9e; outline-offset: 3px; }"
     },
     {
       "name": "Panel",
@@ -263,9 +263,9 @@
       "name": "Perforated Stamp",
       "kind": "custom",
       "refersTo": "stamp",
-      "description": "White paper with round holes cut along its padding box; the content box stays solid.",
+      "description": "Paper with round holes cut along its padding box, printed in a vermilion frame around a white design.",
       "html": "<div class=\"ds-stamp\"><div class=\"ds-stamp-in\"><b>Your API</b><span>fare-origin</span></div></div>",
-      "css": ".ds-stamp { background: #ffffff; color: #1b2232; padding: 10px; -webkit-mask: radial-gradient(5px, #0000 97%, #000) round -5px -5px / 15px 15px, linear-gradient(#000 0 0) content-box; mask: radial-gradient(5px, #0000 97%, #000) round -5px -5px / 15px 15px, linear-gradient(#000 0 0) content-box; display: inline-block; } .ds-stamp-in { padding: 14px 16px; display: grid; gap: 2px; } .ds-stamp b { font: 800 2.3rem/1 'Big Shoulders Display Variable', 'Arial Narrow', sans-serif; text-transform: uppercase; } .ds-stamp span { font: 400 0.78rem/1.4 'Martian Mono Variable', ui-monospace, monospace; }"
+      "css": ".ds-stamp { background: #c2341d; color: #1b2232; padding: 10px; -webkit-mask: radial-gradient(5px, #0000 97%, #000) round -5px -5px / 15px 15px, linear-gradient(#000 0 0) content-box; mask: radial-gradient(5px, #0000 97%, #000) round -5px -5px / 15px 15px, linear-gradient(#000 0 0) content-box; display: inline-block; } .ds-stamp-in { background: #ffffff; border: 7px solid #c2341d; padding: 14px 16px; display: grid; gap: 2px; } .ds-stamp b { font: 800 2.3rem/1 'Big Shoulders Display Variable', 'Arial Narrow', sans-serif; text-transform: uppercase; } .ds-stamp span { font: 400 0.78rem/1.4 'Martian Mono Variable', ui-monospace, monospace; }"
     },
     {
       "name": "No-link Seam",
@@ -277,9 +277,9 @@
   ],
   "narrative": {
     "northStar": "The Sheet of Stamps",
-    "overview": "A pack is a sheet of 100 stamps, and every call cancels one with a postmark that names no sender. The site is built from the materials of philately: gummed sheet paper, perforations, condensed stamp lettering, sheet-margin inscriptions in small mono capitals, and the postmark's double ring with its wavy bars. Each side of the product owns one ink. The buyer's side and the primary action are vermilion, the developer and issuer side ultramarine, proof and cancellations postmark blue-black, and paid is stamp green.\n\nThe surfaces are flat and printed. Depth comes from paper on paper (white stamps and panels on a cool sheet, or mounted on a black album page in the dark scheme), never from shadows. Each route opens on a full-bleed sheet margin in its side's ink, perforated along its lower edge, then settles into a calm reading or working column. Motion is limited to the ink: a postmark presses and its bars strike on, a refused replay bounces, a counter ticks. Reduced motion removes all of it.\n\nThe site refuses the crypto default (dark, neon, coins, padlocks), the cream editorial look, and the SaaS dashboard of metric cards and sidebars. State is named in postal terms: postage due (underpaid), already cancelled (a replayed token), returned (a key the directory does not list).",
+    "overview": "A pack is a sheet of 100 stamps, and every call cancels one with a postmark that names no sender. The site is built from the materials of philately: gummed sheet paper, perforations, condensed stamp lettering, sheet-margin inscriptions in small mono capitals, and the postmark's double ring with its wavy bars. Each side of the product owns one ink. The buyer's side and the primary action are vermilion, the developer and issuer side ultramarine, proof and cancellations postmark blue-black, and paid is stamp green.\n\nThe surfaces are flat and printed. Depth comes from paper on paper (white stamps and panels on a cool sheet, or mounted on a black album page in the dark scheme), never from shadows. Each route opens on a sheet margin of plain paper with dark lettering, its inscription and a closing row of perforations in its side's ink, then settles into a calm reading or working column. Colour is kept for actions and selected details, so the paper dominates (owner, Oct 26: the full vermilion fields were too loud). Motion is limited to the ink: a postmark presses and its bars strike on, a refused replay bounces, a counter ticks. Reduced motion removes all of it.\n\nThe site refuses the crypto default (dark, neon, coins, padlocks), the cream editorial look, and the SaaS dashboard of metric cards and sidebars. State is named in postal terms: postage due (underpaid), already cancelled (a replayed token), returned (a key the directory does not list).",
     "keyCharacteristics": [
-      "One ink per side of the product, fixed in both schemes on the sheet margins.",
+      "One ink per side of the product, carried by inscriptions, perforation rows, actions and details, never by a full-bleed field.",
       "Perforation is the only divider device: stamp edges, margin edges, the \"no link\" seam, rails and section rules.",
       "Stamps and panels are paper in both schemes; they carry the light inks locally.",
       "Display lettering is condensed, uppercase and heavy; reading text is Atkinson at a 34em measure.",
@@ -288,7 +288,7 @@
     "rules": [
       {
         "name": "The One Ink Per Side Rule",
-        "body": "A route's sheet margin and its accents take the ink of the side it serves: vermilion for Home and App, ultramarine for Developers, postmark ink for Proof. Do not mix a second accent into a margin.",
+        "body": "A route's inscription, perforation row and accents take the ink of the side it serves: vermilion for Home and App, ultramarine for Developers, postmark ink for Proof. Do not mix a second accent into a margin.",
         "section": "colors"
       },
       {
@@ -318,7 +318,8 @@
       }
     ],
     "dos": [
-      "**Do** open every route on a sheet margin in its side's ink, perforated along its lower edge.",
+      "**Do** open every route on a paper sheet margin, its inscription and perforation row in the side's ink.",
+      "**Do** keep colour for actions and selected details: red for primary actions and the stamps, blue for developer content, green for paid.",
       "**Do** show the issuer and the API as two halves torn along a \"no link\" perforation whenever both appear.",
       "**Do** name state in postal terms beside its color: postage due, already cancelled, returned, paid.",
       "**Do** keep stamps, panels, code and figures on light paper in the dark scheme.",
@@ -326,6 +327,7 @@
       "**Do** label anything simulated on the element itself (the \"simulated\" tag on every canned answer)."
     ],
     "donts": [
+      "**Don't** fill a sheet margin or header with a full-bleed ink field.",
       "**Don't** use cream, warm beige or editorial off-white grounds. Sheet Paper is cool white.",
       "**Don't** use the crypto default: dark neon, coins, padlocks, glowing gradients.",
       "**Don't** build a dashboard of metric cards or a sidebar shell.",

@@ -1,5 +1,5 @@
-// Home: API providers lead. The sheet margin carries the offer, a stamp carries the
-// integration, a live postmark proves the 402 is real.
+// Home: API providers lead. The sheet margin carries the offer, a red-framed stamp carries
+// the integration, a live postmark proves the 402 is real.
 
 import { Pane } from '../components/Pane.tsx';
 import { Postmark } from '../components/Postmark.tsx';
@@ -52,16 +52,19 @@ export function Home() {
         <div className="wrap">
           <div className="hero">
             <div>
-              <h1 id="pitch">Charge for your API. Never learn who paid.</h1>
+              <h1 id="pitch">Charge for your API without tying calls to payments.</h1>
               <p className="lede">
-                Fare sells your API in packs of 100 calls, paid once in shielded ZEC. Every call carries a single-use token you can verify and cannot trace: not to the payment,
-                not to the caller's other calls.
+                Fare sells your API in packs of 100 calls, paid once in shielded ZEC. Each call carries a single-use token your API can verify but cannot match to the payment or
+                to the caller's other calls.
+              </p>
+              <p className="hero-limit">
+                Tokens unlink payments from calls. A caller's IP address, timing and what they ask can still connect them. <Link to="/proof#limits">What Fare does not hide</Link>
               </p>
               <div className="actions">
-                <Link to="/developers" className="button on-vermilion">
+                <Link to="/developers" className="button primary">
                   Add Fare to your API
                 </Link>
-                <Link to="/app" className="button ghost">
+                <Link to="/app" className="button">
                   Try it with a demo payment
                 </Link>
               </div>
@@ -132,7 +135,7 @@ export function Home() {
 
       <section className="band" aria-labelledby="flow-h">
         <div className="wrap">
-          <h2 id="flow-h">How a call stays unlinkable</h2>
+          <h2 id="flow-h">How a call is kept apart from its payment</h2>
           <ol className="plain flow-steps">
             <li>
               <h3>A 402 with a price</h3>
@@ -148,7 +151,7 @@ export function Home() {
             </li>
             <li>
               <h3>One token per call</h3>
-              <p>Each call spends one token. Your API checks it and refuses a replay, and cannot tell whose it is.</p>
+              <p>Each call spends one token. Your API checks it and refuses a replay, and cannot tell which payment it came from.</p>
             </li>
           </ol>
         </div>

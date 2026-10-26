@@ -4,7 +4,7 @@ Instructions for any coding agent working in this repo (Claude Code, Codex, Curs
 
 ## What you are building
 
-Fare: pay once in shielded ZEC, then call an API with Privacy Pass tokens nobody can link back to the payer, including the API itself. Entry for ZECATHON 2026 (thezecathon.com), Shielded Payments track. Owner: Ore.
+Fare: pay once in shielded ZEC, then call an API with Privacy Pass tokens that nobody, the API included, can match to the payment. Network metadata (IP, timing) and request content are out of scope and stated as residuals. Entry for ZECATHON 2026 (thezecathon.com), Shielded Payments track. Owner: Ore.
 
 ## Deadline
 
@@ -71,7 +71,7 @@ Do not change these without the owner.
 | Pack and price | One pack: 100 calls for 0.001 TAZ. The issuer refuses any other N (owner, Oct 24) |
 | Demo API | LLM proxy. With no model API key on the demo host, a canned responder labeled "simulated" in the UI and README (owner, Oct 24) |
 | Issuer key epoch | Rotates every 7 days; the previous key stays valid for a 24 h grace window (owner, Oct 24) |
-| Frontend look (D1) | "Sheet of stamps" (owner, Oct 25, replacing the Oct 24 "Quiet ledger"): a pack is a sheet of 100 stamps, each call cancels one with a postmark that names no sender. Vermilion, ultramarine, postmark blue-black and stamp green on white sheet paper (dark: black album page); Big Shoulders Display, Atkinson Hyperlegible Next, Martian Mono, all self-hosted. The direction contract lives in `web/.impeccable/surfaces/src-app-tsx.md` |
+| Frontend look (D1) | "Sheet of stamps" (owner, Oct 25, replacing the Oct 24 "Quiet ledger"): a pack is a sheet of 100 stamps, each call cancels one with a postmark that names no sender. Vermilion, ultramarine, postmark blue-black and stamp green on white sheet paper (dark: black album page); Big Shoulders Display, Atkinson Hyperlegible Next, Martian Mono, all self-hosted. Oct 26 (owner): sheet margins are paper with dark text; colour is kept for actions and selected details (red for primary actions and stamps, blue for developer content, green for paid). The direction contract lives in `web/.impeccable/surfaces/src-app-tsx.md` |
 | Site structure (Oct 25) | Home `/` (API providers lead), App `/app` (buyers and agents; `/try` redirects), Developers `/developers` (integration, contract, threat model), Proof `/proof` (live ledger, txids, viewing key, verifier; `/server` and `/how` redirect) (owner, Oct 25) |
 | Release (Oct 25) | The redesign builds on the branch; `main` and the live site stay on the working version until tests, axe, `design:check` and a paid hosted run pass. Freeze Oct 27 evening (Lagos) for the video (owner, Oct 25) |
 | Hosting (D2) | One VPS behind Caddy: static `web/` build plus `api.`, `issuer.` and `payer.` subdomains; scanner and panel on loopback only. DNS only for all four names, no CDN proxy in front (owner, Oct 24) |

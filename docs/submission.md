@@ -4,7 +4,7 @@ Track: Shielded Payments. Draft for Ore to paste into the ZECATHON form.
 
 ---
 
-**Fare: pay once in shielded ZEC, then call an API with tokens nobody can link back to you.**
+**Fare: pay once in shielded ZEC, then call an API with tokens that cannot be matched to your payment.**
 
 Paying for an API usually means an account, a card or a wallet address, and every call is tied to it. Fare sells API access in packs of 100 calls for shielded ZEC and redeems each call with a Privacy Pass token (RFC 9578, blind RSA).
 

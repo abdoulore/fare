@@ -5,7 +5,7 @@
 // spent set. Only then does the wrapped handler run.
 //
 // The origin learns issuer keys from the public directory only. It shares no table, id
-// or log with the issuer (invariant 7), and never learns who paid. It stores spent
+// or log with the issuer (invariant 7), and never sees a purchase or a payment. It stores spent
 // nonces per key and nothing else: no client address, no time (invariant 8).
 //
 // The spent set is one empty file per nonce, spent/<key id>/<nonce>, created with

@@ -27,13 +27,12 @@ export function App() {
   useEffect(() => {
     document.title = TITLES[route];
   }, [route]);
-  const field = route === '/' || route === '/app' ? ' on-field' : route === '/developers' ? ' on-field dev' : route === '/proof' ? ' on-field ink' : '';
   return (
     <>
       <a className="skip" href="#main">
         Skip to content
       </a>
-      <header className={`site${field}`}>
+      <header className="site">
         <div className="wrap">
           <Link to="/" className="mark" aria-label="Fare, home">
             <Mark />

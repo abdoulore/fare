@@ -35,6 +35,6 @@ npm test            # 11 tests, end to end with the real issuer and SDK
 
 ## Privacy
 
-- The origin shares nothing with the issuer but the public directory (invariant 7). It never learns who paid.
+- The origin shares nothing with the issuer but the public directory (invariant 7). It never sees a purchase or a payment.
 - `origin-data/spent/<key id>.txt` holds spent nonces, one per line. No time, no client address, no request content (invariant 8).
 - It logs nothing. A test fails the build if the source logs, reads client identity, or mentions purchases.

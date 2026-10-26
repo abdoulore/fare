@@ -20,7 +20,7 @@ Fare sells access to an API in fixed packs (100 calls for 0.001 TAZ on testnet) 
 
 ## Positioning
 
-Pay once in shielded ZEC; every call after that carries a token nobody can link back to the payer, including the API itself. The mechanism nobody else combines: a fresh shielded-only address per purchase, matched from compact blocks by diversifier index with a viewing key only (no memo, no transaction lookup), and RFC 9578 blind RSA tokens blinded and unblinded in the buyer's own browser or client.
+Pay once in shielded ZEC; every call after that carries a token that nobody, the API included, can match to the payment. IP address, timing and request content are not hidden by the tokens. The mechanism nobody else combines: a fresh shielded-only address per purchase, matched from compact blocks by diversifier index with a viewing key only (no memo, no transaction lookup), and RFC 9578 blind RSA tokens blinded and unblinded in the buyer's own browser or client.
 
 ## Operating Context
 
