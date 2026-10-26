@@ -7,9 +7,13 @@
 // The origin learns issuer keys from the public directory only. It shares no table, id
 // or log with the issuer (invariant 7), and never learns who paid. It stores spent
 // nonces per key and nothing else: no client address, no time (invariant 8).
+//
+// The spent set is one empty file per nonce, spent/<key id>/<nonce>, created with
+// O_CREAT | O_EXCL. Creation is atomic, so any number of origin processes sharing the
+// data directory on one host can redeem concurrently and a token still works once.
 
 import { createHash } from 'node:crypto';
-import { appendFileSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
+import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join } from 'node:path';
 
@@ -57,6 +61,7 @@ export interface OriginStats {
 const hex = (b: Uint8Array): string => Buffer.from(b).toString('hex');
 const sha256hex = (b: Uint8Array): string => createHash('sha256').update(b).digest('hex');
 const KEY_ID = /^[0-9a-f]{64}$/;
+const NONCE = /^[0-9a-f]{64}$/;
 
 export function createOrigin(opts: OriginOptions) {
   const origin = new Origin(MODE, [opts.originName]);
@@ -69,7 +74,6 @@ export function createOrigin(opts: OriginOptions) {
   let lastRefresh = 0;
   /** Key ids this origin has ever accepted. A token under one that left the directory is expired, not unknown. */
   const retired = new Set<string>();
-  const spent = new Map<string, Set<string>>();
   const stats: OriginStats = {
     redeemed: 0,
     challenged: 0,
@@ -77,13 +81,30 @@ export function createOrigin(opts: OriginOptions) {
     spentByKey: {},
   };
 
+  /** Marks `nonce` spent under `keyId`. False when it already was, in this process or any other. */
+  function markSpent(keyId: string, nonce: string): boolean {
+    const dir = join(spentDir, keyId);
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
+    try {
+      closeSync(openSync(join(dir, nonce), 'wx', 0o600));
+      return true;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === 'EEXIST') return false;
+      throw e;
+    }
+  }
+
   mkdirSync(spentDir, { recursive: true, mode: 0o700 });
   for (const f of readdirSync(spentDir)) {
-    const keyId = f.replace(/\.txt$/, '');
-    if (!KEY_ID.test(keyId)) continue;
-    const nonces = readFileSync(join(spentDir, f), 'utf8').split('\n').filter(Boolean);
-    spent.set(keyId, new Set(nonces));
-    retired.add(keyId);
+    // Before Oct 26 the set was one append-only file per key, spent/<key id>.txt. Its
+    // nonces are copied into the per-nonce layout (idempotent) and the file is kept.
+    const legacy = f.match(/^([0-9a-f]{64})\.txt$/);
+    if (legacy) {
+      for (const nonce of readFileSync(join(spentDir, f), 'utf8').split('\n').filter((n) => NONCE.test(n))) markSpent(legacy[1], nonce);
+      retired.add(legacy[1]);
+    } else if (KEY_ID.test(f) && statSync(join(spentDir, f)).isDirectory()) {
+      retired.add(f);
+    }
   }
 
   async function refresh(force = false): Promise<void> {
@@ -142,16 +163,8 @@ export function createOrigin(opts: OriginOptions) {
     if (hex(token.authInput.challengeDigest) !== challengeDigest) return refuse('wrong_challenge');
     if (!(await origin.verify(token, key.cryptoKey))) return refuse('bad_signature');
 
-    // No await between the check and the insert: two requests with one token cannot both pass.
-    const nonce = hex(token.authInput.nonce);
-    let set = spent.get(keyId);
-    if (!set) {
-      set = new Set();
-      spent.set(keyId, set);
-    }
-    if (set.has(nonce)) return refuse('token_reused');
-    set.add(nonce);
-    appendFileSync(join(spentDir, `${keyId}.txt`), `${nonce}\n`, { mode: 0o600 });
+    // One exclusive create: two requests with one token, in this process or another, cannot both pass.
+    if (!markSpent(keyId, hex(token.authInput.nonce))) return refuse('token_reused');
     stats.redeemed += 1;
     return { ok: true };
   }
@@ -184,7 +197,9 @@ export function createOrigin(opts: OriginOptions) {
 
   function snapshot(): OriginStats {
     const spentByKey: Record<string, number> = {};
-    for (const [k, s] of spent) spentByKey[k.slice(0, 16)] = s.size;
+    for (const k of readdirSync(spentDir)) {
+      if (KEY_ID.test(k) && existsSync(join(spentDir, k)) && statSync(join(spentDir, k)).isDirectory()) spentByKey[k.slice(0, 16)] = readdirSync(join(spentDir, k)).length;
+    }
     return { ...stats, refused: { ...stats.refused }, spentByKey };
   }
 

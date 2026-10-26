@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { join } from 'node:path';
@@ -231,12 +231,54 @@ test('the spent set survives a restart and holds nonces only', async () => {
     const res = await call(b.url, auth);
     assert.equal(res.status, 401);
     assert.deepEqual(await res.json(), { error: 'token_reused' });
-    for (const f of readdirSync(join(dataDir, 'spent'))) {
-      assert.match(f, /^[0-9a-f]{64}\.txt$/);
-      for (const line of readFileSync(join(dataDir, 'spent', f), 'utf8').split('\n').filter(Boolean)) {
-        assert.match(line, /^[0-9a-f]{64}$/, 'a nonce and nothing else');
+    for (const k of readdirSync(join(dataDir, 'spent'))) {
+      assert.match(k, /^[0-9a-f]{64}$/, 'a key id');
+      for (const n of readdirSync(join(dataDir, 'spent', k))) {
+        assert.match(n, /^[0-9a-f]{64}$/, 'a nonce and nothing else');
+        assert.equal(statSync(join(dataDir, 'spent', k, n)).size, 0, 'the file is empty: no time, no address');
       }
     }
+  } finally {
+    await b.close();
+  }
+});
+
+test('two origin processes sharing a data directory accept a token exactly once', async () => {
+  const dataDir = tempDir();
+  const a = await startOrigin(dataDir);
+  const b = await startOrigin(dataDir);
+  try {
+    const { take } = await stocked(a.url);
+    for (let i = 0; i < 5; i++) {
+      const auth = take();
+      const codes = (await Promise.all([call(a.url, auth), call(b.url, auth), call(a.url, auth), call(b.url, auth)])).map((r) => r.status).sort();
+      assert.deepEqual(codes, [200, 401, 401, 401], 'one of four concurrent redemptions passes');
+    }
+    assert.equal(a.served.count + b.served.count, 1 + 5, 'the stocking call plus one per token');
+    assert.equal(a.origin.stats().spentByKey[a.origin.currentKeyId()!.slice(0, 16)], 6, 'both see the shared set');
+  } finally {
+    await a.close();
+    await b.close();
+  }
+});
+
+test('nonces in the pre-Oct 26 spent/<key>.txt file stay spent', async () => {
+  const dataDir = tempDir();
+  const a = await startOrigin(dataDir);
+  const { take } = await stocked(a.url);
+  const auth = take();
+  await a.close();
+  const [parsed] = AuthorizationHeader.parse(BLIND_RSA, auth);
+  const keyId = Buffer.from(parsed.token.authInput.tokenKeyId).toString('hex');
+  mkdirSync(join(dataDir, 'spent'), { recursive: true });
+  writeFileSync(join(dataDir, 'spent', `${keyId}.txt`), `${Buffer.from(parsed.token.authInput.nonce).toString('hex')}\n`);
+
+  const b = await startOrigin(dataDir);
+  try {
+    const res = await call(b.url, auth);
+    assert.equal(res.status, 401);
+    assert.deepEqual(await res.json(), { error: 'token_reused' });
+    assert.ok(existsSync(join(dataDir, 'spent', `${keyId}.txt`)), 'the old file is kept');
   } finally {
     await b.close();
   }
