@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { statSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { join } from 'node:path';
@@ -319,6 +319,93 @@ test('core encoders match Node and a memory client persists every change before 
     await sdk.forget();
     assert.equal(sdk.tokenCount(), 0);
     assert.equal(sdk.pinnedKey, undefined);
+  } finally {
+    await origin.close();
+  }
+});
+
+test('an order is saved before it is paid, and a new client collects it after a crash', async () => {
+  const origin = await testOrigin(tokenKey, verifyKey);
+  const stateFile = join(tempDir(), 'sdk.json');
+  try {
+    const a = client(stateFile);
+    await a.pin();
+    const challenge = a.checkChallenge((await fetch(origin.url)).headers.get('www-authenticate'));
+    const purchase = await a.order(challenge, { pack: PACK, price_zec: '0.001', issuer: issuer.url });
+    // `a` is gone (page closed, process killed) before it ever polls; the buyer pays anyway.
+    const saved = JSON.parse(readFileSync(stateFile, 'utf8')) as { pending: { purchase_id: string; blinds: unknown[] }[] };
+    assert.equal(saved.pending.length, 1, 'on disk before order() returned');
+    assert.equal(saved.pending[0].blinds.length, PACK);
+    scanner.statuses.set(purchase.purchase_id, { status: 'paid' });
+
+    const b = client(stateFile);
+    const [resumed] = b.pendingPurchases();
+    assert.equal(resumed.purchase_id, purchase.purchase_id);
+    assert.equal(await b.collect(resumed), PACK);
+    assert.equal(b.pendingPurchases().length, 0, 'collected orders are removed in the same write');
+    assert.equal((await b.fetch(origin.url)).status, 200, 'a recovered token is accepted');
+    assert.equal(client(stateFile).tokenCount(), PACK - 1);
+  } finally {
+    await origin.close();
+  }
+});
+
+test('two clients on one store never take the same token, and a purchase is collected once', async () => {
+  const { FareCore, memoryStateStore } = await import('../src/core.ts');
+  const origin = await testOrigin(tokenKey, verifyKey);
+  try {
+    const store = memoryStateStore();
+    const opts = { issuerUrl: issuer.url, pollMs: 10, timeoutMs: 2_000 };
+    const a = new FareCore(opts, store, await store.read());
+    const b = new FareCore(opts, store, await store.read());
+    await a.pin();
+    await b.pin();
+    const challenge = a.checkChallenge((await fetch(origin.url)).headers.get('www-authenticate'));
+    const purchase = await a.order(challenge, { pack: PACK, price_zec: '0.001', issuer: issuer.url });
+    scanner.statuses.set(purchase.purchase_id, { status: 'paid' });
+    await b.refresh();
+    const both = await Promise.all([a.collect(purchase), b.collect(b.pendingPurchases()[0])]);
+    assert.deepEqual([...both].sort((x, y) => x - y), [0, PACK], 'one stores the tokens, the other finds them collected');
+
+    // Each client tries 60 spends at once: 100 tokens, so 100 distinct ones and 20 misses.
+    const spends = await Promise.all(Array.from({ length: 120 }, (_, i) => (i % 2 ? a : b).spend(challenge)));
+    const got = spends.filter((x): x is string => typeof x === 'string');
+    assert.equal(got.length, PACK);
+    assert.equal(new Set(got).size, PACK, 'no token handed out twice');
+    for (const auth of got.slice(0, 3)) assert.equal((await fetch(origin.url, { headers: { authorization: auth } })).status, 200);
+  } finally {
+    await origin.close();
+  }
+});
+
+test('an order that can never complete is dropped from the saved state', async () => {
+  const origin = await testOrigin(tokenKey, verifyKey);
+  const t0 = issuer.clock.now;
+  try {
+    const sdk = client();
+    await sdk.pin();
+    const challenge = sdk.checkChallenge((await fetch(origin.url)).headers.get('www-authenticate'));
+    const purchase = await sdk.order(challenge, { pack: PACK, price_zec: '0.001', issuer: issuer.url });
+    assert.equal(sdk.pendingPurchases().length, 1);
+    issuer.clock.now = t0 + 24 * 3600;
+    await assert.rejects(sdk.collect(purchase), /expired/);
+    assert.equal(sdk.pendingPurchases().length, 0);
+  } finally {
+    issuer.clock.now = t0;
+    await origin.close();
+  }
+});
+
+test('forget drops tokens and the pin but keeps a saved order, which may be paid already', async () => {
+  const origin = await testOrigin(tokenKey, verifyKey);
+  try {
+    const sdk = client();
+    await sdk.pin();
+    const challenge = sdk.checkChallenge((await fetch(origin.url)).headers.get('www-authenticate'));
+    await sdk.order(challenge, { pack: PACK, price_zec: '0.001', issuer: issuer.url });
+    await sdk.forget();
+    assert.equal(sdk.pinnedKey, undefined);
+    assert.equal(sdk.pendingPurchases().length, 1);
   } finally {
     await origin.close();
   }
