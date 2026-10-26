@@ -23,13 +23,14 @@ for (const scheme of ['dark', 'light'] as const) {
     test('/app has no violations through a purchase', async ({ page }) => {
       await page.goto('/app');
       await audit(page);
-      await page.getByRole('button', { name: 'Ask without a token' }).click();
+      await page.getByText('What happens in your browser').click();
       await page.getByRole('button', { name: 'Buy 100 calls' }).click();
       await expect(page.getByTestId('order')).toBeVisible();
       await audit(page);
       await page.getByRole('button', { name: 'Pay 0.001 TAZ with the demo payer' }).click();
       await expect(page.getByTestId('tokens-left')).toHaveText('100');
       await page.getByRole('button', { name: 'Ask with one token' }).click();
+      await page.getByText('Test the refusals').click();
       await page.getByRole('button', { name: 'Replay my last token' }).click();
       await expect(page.getByTestId('replay-refused')).toBeVisible();
       await audit(page);

@@ -71,11 +71,11 @@ describe('token storage and spending', () => {
     scanner.statuses.set(p.purchase_id, { status: 'paid' });
     const paid = await c.poll(p);
     expect(await c.finish(p, paid)).toBe(100);
-    expect((await store.load()).tokens.length).toBe(100);
+    expect((await store.read()).tokens.length).toBe(100);
 
     const auth = await c.spend(challenge);
     expect(auth).toMatch(/^PrivateToken token=/);
-    expect((await store.load()).tokens.length, 'persisted before spend() resolved').toBe(99);
+    expect((await store.read()).tokens.length, 'persisted before spend() resolved').toBe(99);
 
     const ok = await fetch(api.url, { headers: { authorization: auth! } });
     expect(ok.status).toBe(200);
@@ -98,9 +98,56 @@ describe('token storage and spending', () => {
 
     // Forget my tokens.
     await again.forget();
-    await store.clear();
-    expect((await store.load()).tokens).toEqual([]);
+    expect((await store.read()).tokens).toEqual([]);
     expect((await createClient(store, issuer.url)).tokenCount()).toBe(0);
+  }, 60_000);
+
+  test('an order is in IndexedDB before it is paid, and a reload collects it', async () => {
+    const store = idbStore();
+    const c = await createClient(store, issuer.url);
+    await c.pin();
+    const challenge = await c.acceptChallenge(await challengeHeader());
+    const p = await c.order(challenge, { pack: 100, price_zec: '0.001', issuer: issuer.url });
+    expect((await store.read()).pending?.map((x) => x.purchase_id)).toContain(p.purchase_id);
+    scanner.statuses.set(p.purchase_id, { status: 'paid' });
+
+    // The tab closed after paying. A new page load finds the order and collects it.
+    const reloaded = await createClient(store, issuer.url);
+    const saved = reloaded.pendingPurchases().find((x) => x.purchase_id === p.purchase_id)!;
+    const before = reloaded.tokenCount();
+    expect(await reloaded.finish(saved, await reloaded.poll(saved))).toBe(100);
+    expect(reloaded.tokenCount()).toBe(before + 100);
+    expect(reloaded.pendingPurchases().some((x) => x.purchase_id === p.purchase_id)).toBe(false);
+    const auth = await reloaded.spend(challenge);
+    expect((await fetch(api.url, { headers: { authorization: auth! } })).status).toBe(200);
+  }, 60_000);
+
+  test('two tabs on one IndexedDB never spend the same token, and each hears the other change', async () => {
+    const store = idbStore();
+    const a = await createClient(store, issuer.url);
+    await a.forget();
+    await a.pin();
+    const challenge = await a.acceptChallenge(await challengeHeader());
+    const p = await a.order(challenge, { pack: 100, price_zec: '0.001', issuer: issuer.url });
+    scanner.statuses.set(p.purchase_id, { status: 'paid' });
+    const b = await createClient(idbStore(), issuer.url);
+    const heard = new Promise<void>((resolve) => {
+      const stop = store.onChange(() => {
+        stop();
+        resolve();
+      });
+    });
+    // Both tabs collect the same order: the tokens are stored once.
+    const both = await Promise.all([a.finish(p, await a.poll(p)), b.finish(p, await b.poll(p))]);
+    expect([...both].sort((x, y) => x - y)).toEqual([0, 100]);
+    await heard;
+
+    const spends = await Promise.all(Array.from({ length: 120 }, (_, i) => (i % 2 ? a : b).spend(challenge)));
+    const got = spends.filter((x): x is string => typeof x === 'string');
+    expect(got).toHaveLength(100);
+    expect(new Set(got).size, 'no token handed out twice').toBe(100);
+    await b.refresh();
+    expect(b.tokenCount()).toBe(0);
   }, 60_000);
 
   test('an underpaid purchase never yields signatures', async () => {

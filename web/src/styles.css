@@ -319,6 +319,12 @@ progress::-moz-progress-bar { background: #c2341d; }
 .track span.paidnow { color: #1d6a44; border-top-color: #1d6a44; }
 .qr { width: 180px; height: 180px; background: #ffffff; padding: 8px; }
 .qr rect { fill: #1b2232; }
+/* The offer on /app: what a buyer gets, before any cryptography. */
+dl.offer { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 24px; margin: 6px 0 14px; padding: 14px 0; border-top: 1.5px solid var(--sheet-ink, #1b2232); border-bottom: 1px solid var(--line); }
+@media (max-width: 560px) { dl.offer { grid-template-columns: minmax(0, 1fr); } }
+dl.offer dt { font: 500 0.72rem/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--sheet-muted); }
+dl.offer dd { margin: 2px 0 0; font-weight: 700; font-size: 1.05rem; }
+details.refusals h3 { font-size: 1.15rem; margin: 6px 0 0; }
 details.more { border-top: 1px solid var(--line); padding: 12px 0; }
 details.more > summary { cursor: pointer; font-weight: 700; list-style-position: inside; min-height: 32px; }
 .probe { margin-top: 14px; }

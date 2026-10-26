@@ -1,27 +1,32 @@
 // The browser's Fare client: the SDK core with its state in IndexedDB. Blinding and
 // unblinding happen here; the issuer sees only blinded requests, the API only tokens.
 
-import { MemoryFareClient, sha256hex, fromB64url, tokenKeyId, type DirectoryKey } from '../../../sdk/src/core.ts';
+import { FareCore, sha256hex, fromB64url, tokenKeyId, type DirectoryKey } from '../../../sdk/src/core.ts';
 import { publicVerif, WWWAuthenticateHeader } from '@cloudflare/privacypass-ts';
 
 import { EPOCH_SECONDS, GRACE_SECONDS, ISSUER_URL } from './config.ts';
-import { idbStore, memoryStore, type TokenStore } from './store.ts';
+import { idbStore, memoryStore, type BrowserStore } from './store.ts';
 
-export { MemoryFareClient };
+export { FareCore };
 
-export async function openStore(): Promise<{ store: TokenStore; persistent: boolean }> {
+export async function openStore(): Promise<{ store: BrowserStore; persistent: boolean }> {
   try {
     const store = idbStore();
-    await store.load();
+    await store.read();
     return { store, persistent: true };
   } catch {
     return { store: memoryStore(), persistent: false };
   }
 }
 
-export async function createClient(store: TokenStore, issuerUrl = ISSUER_URL): Promise<MemoryFareClient> {
-  const state = await store.load();
-  return new MemoryFareClient({ issuerUrl, pollMs: 5_000 }, state, (s) => store.save(s));
+export async function createClient(store: BrowserStore, issuerUrl = ISSUER_URL): Promise<FareCore> {
+  return new FareCore({ issuerUrl, pollMs: 5_000 }, store, await store.read());
+}
+
+/** When tokens from `tokenKey` stop being accepted, from the directory; undefined if it is not listed. */
+export function keyRetiresAt(tokenKey: string, directory: DirectoryKey[]): number | undefined {
+  const k = directory.find((d) => d.tokenKey === tokenKey);
+  return k ? retiresAt(k) : undefined;
 }
 
 export async function keyIdOf(tokenKey: string): Promise<string> {

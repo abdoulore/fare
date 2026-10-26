@@ -3,11 +3,10 @@
 
 import { expect, test, type Page } from '@playwright/test';
 
+/** Opens /app; the price check runs on load and enables Buy once the key is checked. */
 async function ask(page: Page) {
   await page.goto('/app');
-  const btn = page.getByRole('button', { name: 'Ask without a token' });
-  await expect(btn).toBeEnabled();
-  await btn.click();
+  await expect(page.getByRole('button', { name: 'Buy 100 calls' })).toBeEnabled();
 }
 
 async function buy(page: Page): Promise<string> {
@@ -27,13 +26,19 @@ test('402, buy, demo payer, paid, 100 tokens, 3 calls, replay and model failure 
   });
 
   await ask(page);
+  // The offer leads, with the exact date the tokens stop working; the cryptography is one click away.
+  await expect(page.getByTestId('offer')).toContainText('0.001 TAZ, paid once');
+  await expect(page.getByTestId('works-until')).toHaveText(/^\w{3}, \d{2} \w{3} \d{4} \d{2}:\d{2} UTC$/);
   const probe = page.getByTestId('probe');
+  await expect(probe).toBeHidden();
+  await page.getByText('What happens in your browser').click();
   await expect(probe).toContainText('402 Payment Required');
   await expect(probe).toContainText('key matches the published directory');
   await expect(probe).toContainText('100 calls for 0.001 TAZ');
 
   const purchaseId = await buy(page);
   await expect(page.getByText(/blinded 100 of 100 in this browser, \d+ ms/)).toBeVisible();
+  await expect(page.getByTestId('order')).toContainText('You can close this page: the order is saved in this browser');
 
   await page.getByRole('button', { name: 'Pay 0.001 TAZ with the demo payer' }).click();
   await expect(page.getByTestId('demo-paid')).toContainText('Paid by the demo wallet, not by you');
@@ -41,11 +46,13 @@ test('402, buy, demo payer, paid, 100 tokens, 3 calls, replay and model failure 
   await expect(page.getByTestId('status-label')).toHaveText('paid');
   await expect(page.getByTestId('tokens-left')).toHaveText('100');
   await expect(page.getByTestId('payment-receipt')).toContainText(/sent 0\.001 TAZ by the demo wallet, txid [0-9a-f]{64}/);
-  await expect(page.getByRole('heading', { name: 'Use' })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'Ask' })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Replay my last token' }), 'replay testing is not beside the normal action').toBeHidden();
 
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Ask with one token' }).click(), await expect(page.getByTestId('tokens-left')).toHaveText(String(99 - i));
   await expect(page.getByTestId('answers').locator('.sim')).toHaveCount(3);
 
+  await page.getByText('Test the refusals').click();
   await page.getByRole('button', { name: 'Replay my last token' }).click();
   await expect(page.getByTestId('replay-refused')).toContainText('401 token_reused');
   await expect(page.getByTestId('tokens-left')).toHaveText('97');
@@ -118,6 +125,54 @@ test('a challenge with an unlisted key is refused before any order', async ({ pa
   await expect(page.getByTestId('key-refused')).toContainText('not in the issuer directory');
   await expect(page.getByRole('button', { name: 'Buy 100 calls' })).toBeDisabled();
   expect(orders).toBe(0);
+});
+
+test('a paid order survives its tab closing before the tokens arrive', async ({ context }) => {
+  const first = await context.newPage();
+  // This tab never sees the purchase paid: the issuer answers "pending" to it.
+  await first.route(/\/fare\/purchases\/[0-9a-f]{32}$/, (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"status":"pending"}' }),
+  );
+  await ask(first);
+  await buy(first);
+  await first.getByRole('button', { name: 'Pay 0.001 TAZ with the demo payer' }).click();
+  await expect(first.getByTestId('demo-paid')).toBeVisible();
+  await expect(first.getByTestId('tokens-left')).toHaveText('0');
+  await first.close();
+
+  const later = await context.newPage();
+  await later.goto('/app');
+  await expect(later.getByTestId('order')).toContainText('Your order from your last visit');
+  await expect(later.getByTestId('tokens-left')).toHaveText('100', { timeout: 30_000 });
+  await later.getByRole('button', { name: 'Ask with one token' }).click();
+  await expect(later.getByTestId('answers').locator('li')).toHaveCount(1);
+  await later.reload();
+  await expect(later.getByTestId('order'), 'a collected order is not resumed again').toHaveCount(0);
+  await expect(later.getByTestId('tokens-total')).toHaveText('99 unspent');
+});
+
+test('two tabs share one sheet and never spend the same token', async ({ context }) => {
+  const a = await context.newPage();
+  await ask(a);
+  await buy(a);
+  await a.getByRole('button', { name: 'Pay 0.001 TAZ with the demo payer' }).click();
+  await expect(a.getByTestId('tokens-left')).toHaveText('100');
+
+  const b = await context.newPage();
+  await b.goto('/app');
+  await expect(b.getByTestId('tokens-left')).toHaveText('100');
+  await b.getByRole('button', { name: 'Ask with one token' }).click();
+  await expect(b.getByTestId('tokens-left')).toHaveText('99');
+  await expect(a.getByTestId('tokens-total'), 'the other tab hears the spend').toHaveText('99 unspent');
+
+  const answered = (p: typeof a, n: number) => expect(p.getByTestId('answers').locator('li')).toHaveCount(n);
+  await Promise.all([a.getByRole('button', { name: 'Ask with one token' }).click(), b.getByRole('button', { name: 'Ask with one token' }).click()]);
+  await answered(a, 1);
+  await answered(b, 2);
+  await expect(a.getByTestId('answers').locator('.sim')).toHaveCount(1);
+  await expect(b.getByTestId('answers').locator('.sim'), 'no call refused as a reused token').toHaveCount(2);
+  await expect(a.getByTestId('tokens-total')).toHaveText('97 unspent');
+  await expect(b.getByTestId('tokens-total')).toHaveText('97 unspent');
 });
 
 test('an expired purchase says so and offers a new one', async ({ page }) => {

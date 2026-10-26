@@ -1,7 +1,10 @@
-// /app: the buyer's working screen. Buying is a short stepper; once tokens exist the screen
-// is an ask box beside the buyer's own pane of stamps, each spent token cancelled.
+// /app: the buyer's working screen. The price is checked on load; buying is three steps
+// (buy, pay, wait); once tokens exist the screen is an ask box beside the buyer's own pane
+// of stamps, each spent token cancelled. The cryptography and the refusal tests sit in
+// their own disclosures, away from the normal path.
 // Tokens are blinded and unblinded in this browser; the issuer sees blinded requests, the
-// API sees tokens, and neither sees both.
+// API sees tokens, and neither sees both. An order is saved in this browser before it is
+// paid, so a reload or a closed tab resumes it; other tabs are told when tokens change.
 
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 
@@ -11,7 +14,6 @@ import {
   parseOffer,
   UnpinnedKeyError,
   type DirectoryKey,
-  type MemoryFareClient,
   type Offer,
   type PendingPurchase,
   type WWWAuthenticateHeader,
@@ -22,8 +24,7 @@ import { Postmark } from '../components/Postmark.tsx';
 import { Qr } from '../components/Qr.tsx';
 import { demoPay, payerRefusal, type DemoPayment } from '../lib/api.ts';
 import { API_URL, EXPLORER_TX } from '../lib/config.ts';
-import { createClient, groupTokens, keyIdOf, openStore, swapChallengeKey, type TokenGroup } from '../lib/fare.ts';
-import type { TokenStore } from '../lib/store.ts';
+import { createClient, groupTokens, keyIdOf, keyRetiresAt, openStore, swapChallengeKey, type TokenGroup } from '../lib/fare.ts';
 import { refusalText, STEPS, viewStatus, type StepView } from '../lib/status.ts';
 import { Link } from '../router.tsx';
 
@@ -64,15 +65,16 @@ function Txid({ txid }: { txid: string }) {
   );
 }
 
+const utc = (unixSeconds: number) => new Date(unixSeconds * 1000).toUTCString().replace(':00 GMT', ' UTC');
+
 function elapsed(fromMs: number, nowMs: number): string {
   const s = Math.max(0, Math.floor((nowMs - fromMs) / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
 export function Use() {
-  const [store, setStore] = useState<TokenStore>();
   const [persistent, setPersistent] = useState(true);
-  const [client, setClient] = useState<MemoryFareClient>();
+  const [client, setClient] = useState<FareCore>();
   const [directory, setDirectory] = useState<DirectoryKey[]>([]);
   const [setupError, setSetupError] = useState<string>();
   const [, setTick] = useState(0);
@@ -96,6 +98,10 @@ export function Use() {
   const [warning, setWarning] = useState<string>();
   const [issued, setIssued] = useState<number>();
 
+  const [elsewhere, setElsewhere] = useState(false);
+  const [resumed, setResumed] = useState(false);
+  const [replay, setReplay] = useState<Exchange>();
+
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
   const [lastAuth, setLastAuth] = useState<string>();
   const [groups, setGroups] = useState<TokenGroup[]>([]);
@@ -106,9 +112,12 @@ export function Use() {
   const waitHeading = useRef<HTMLHeadingElement>(null);
   const useHeading = useRef<HTMLHeadingElement>(null);
 
-  // Open the store, load the client and pin the issuer key from the published directory.
+  // Open the store, load the client, pin the issuer key from the published directory, and
+  // resume the newest saved order, if any. Another tab's changes refresh this one.
+  const changedElsewhere = useRef<() => void>(() => undefined);
   useEffect(() => {
     let alive = true;
+    let stop = () => undefined as void;
     void (async () => {
       try {
         const { store, persistent } = await openStore();
@@ -116,16 +125,23 @@ export function Use() {
         await c.pin();
         const dir = await c.directory();
         if (!alive) return;
-        setStore(store);
+        stop = store.onChange(() => changedElsewhere.current());
         setPersistent(persistent);
         setClient(c);
         setDirectory(dir);
+        const saved = c.pendingPurchases().at(-1);
+        if (saved) {
+          setPurchase(saved);
+          setStatus(viewStatus('pending'));
+          setResumed(true);
+        }
       } catch (e) {
         if (alive) setSetupError((e as Error).message);
       }
     })();
     return () => {
       alive = false;
+      stop();
     };
   }, []);
 
@@ -137,6 +153,15 @@ export function Use() {
   useEffect(() => {
     void refreshGroups();
   }, [refreshGroups]);
+
+  changedElsewhere.current = () => {
+    if (!client) return;
+    void client.refresh().then(() => {
+      setCounterTick((t) => t + 1);
+      rerender();
+      void refreshGroups();
+    });
+  };
 
   const tokens = client?.tokenCount() ?? 0;
   const challengeKey = probe?.challenge ? challengeId(probe.challenge) : undefined;
@@ -157,14 +182,22 @@ export function Use() {
           if (s.warning) setWarning(s.warning);
           const n = await client.finish(purchase, s);
           if (!alive) return;
-          setIssued(n);
+          // 0: another tab collected this order first; its tokens are already stored.
+          if (n === 0) {
+            await client.refresh();
+            setElsewhere(true);
+          }
+          setIssued(n || purchase.blinds.length);
           setCounterTick((t) => t + 1);
           requestAnimationFrame(() => useHeading.current?.focus());
           await refreshGroups();
           rerender();
           return;
         }
-        if (FareCore.final(s)) return;
+        if (FareCore.final(s)) {
+          await client.drop(purchase);
+          return;
+        }
       } catch (e) {
         if (!alive) return;
         setStatus({ step: 0, label: 'issuer unreachable', tone: 'wait', final: false, detail: (e as Error).message });
@@ -185,7 +218,7 @@ export function Use() {
     return () => clearInterval(t);
   }, [waitFrom, issued, status]);
 
-  async function spendAndAsk(c: MemoryFareClient, challenge: WWWAuthenticateHeader, text: string): Promise<void> {
+  async function spendAndAsk(c: FareCore, challenge: WWWAuthenticateHeader, text: string): Promise<void> {
     const auth = await c.spend(challenge);
     if (!auth) return;
     setCounterTick((t) => t + 1);
@@ -210,7 +243,7 @@ export function Use() {
   }
 
   /** Asks for a call with no token and checks the 402's key; returns the accepted challenge. */
-  async function fetchChallenge(c: MemoryFareClient, text: string, swapKey: boolean): Promise<WWWAuthenticateHeader | undefined> {
+  async function fetchChallenge(c: FareCore, text: string, swapKey: boolean): Promise<WWWAuthenticateHeader | undefined> {
     try {
       const res = await ask(text);
       if (res.status !== 402) {
@@ -240,22 +273,21 @@ export function Use() {
     }
   }
 
-  // With tokens already in this browser, fetch the challenge on load so they are usable
-  // at once. Nothing is spent and nothing is ordered.
+  // Ask the API once without a token on load: that 402 is the price, and its key is checked
+  // against the directory before anything can be ordered. Nothing is spent.
   const autoProbed = useRef(false);
   useEffect(() => {
-    if (!client || autoProbed.current || client.tokenCount() === 0) return;
+    if (!client || autoProbed.current) return;
     autoProbed.current = true;
     void fetchChallenge(client, 'price check', false);
   }, [client]);
 
-  async function onAsk(e: FormEvent) {
-    e.preventDefault();
-    if (!client || busy || !prompt.trim()) return;
+  /** The refusal test: ask without a token again, with the key swapped if `tamper` is on. */
+  async function onProbe() {
+    if (!client || busy) return;
     setBusy(true);
     try {
-      const challenge = await fetchChallenge(client, prompt, tamper);
-      if (challenge && client.tokenCount(challengeId(challenge)) > 0) await spendAndAsk(client, challenge, prompt);
+      await fetchChallenge(client, 'price check', tamper);
     } finally {
       setBusy(false);
     }
@@ -321,21 +353,20 @@ export function Use() {
       const res = await ask('replay of my last token', lastAuth).catch(() => undefined);
       const body = res ? ((await res.json().catch(() => ({}))) as { error?: string; answer?: string }) : {};
       const id = nextId.current++;
-      const ex: Exchange =
+      setReplay(
         res?.status === 401
           ? { id, prompt: 'Replay of my last token', kind: 'refused', text: `401 ${body.error}: ${refusalText(body.error ?? '')}`, replay: true }
-          : { id, prompt: 'Replay of my last token', kind: 'error', text: res ? `Unexpected ${res.status}` : 'The API is not reachable.', replay: true };
-      setExchanges((list) => [ex, ...list]);
+          : { id, prompt: 'Replay of my last token', kind: 'error', text: res ? `Unexpected ${res.status}` : 'The API is not reachable.', replay: true },
+      );
     } finally {
       setBusy(false);
     }
   }
 
   async function onForget() {
-    if (!client || !store) return;
+    if (!client) return;
     setConfirmForget(false);
     await client.forget();
-    await store.clear();
     await client.pin();
     setGroups([]);
     setLastAuth(undefined);
@@ -350,6 +381,10 @@ export function Use() {
   }
 
   function reset() {
+    // A dead order (expired, underpaid) is forgotten; a paid one already left the store.
+    if (purchase && status?.final && client) void client.drop(purchase);
+    setElsewhere(false);
+    setResumed(false);
     setPurchase(undefined);
     setPayment(undefined);
     setPayError(undefined);
@@ -360,13 +395,14 @@ export function Use() {
     setWarning(undefined);
   }
 
+  // With IndexedDB the order survives a closed tab; without it, warn before leaving.
   const awaitingTokens = purchase !== undefined && issued === undefined && status?.final !== true;
   useEffect(() => {
-    if (!awaitingTokens) return;
+    if (!awaitingTokens || persistent) return;
     const warn = (e: BeforeUnloadEvent) => e.preventDefault();
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [awaitingTokens]);
+  }, [awaitingTokens, persistent]);
 
   if (setupError) {
     return (
@@ -383,16 +419,20 @@ export function Use() {
   const paid = issued !== undefined;
   const canUse = usable > 0;
   const dead = status?.final === true;
+  const seenOnChain = (status?.step ?? 0) >= 1;
   const buying = !canUse || (ordered && !paid);
   const stepClass = (n: number) => {
-    const reached = [true, challengeOk, ordered, ordered && (payment !== undefined || status !== undefined)][n - 1];
-    const finished = [challengeOk, ordered, payment !== undefined || (status?.step ?? 0) > 0, paid][n - 1];
-    if (n === 4 && dead) return 'dead';
+    const reached = [true, ordered, ordered && (payment !== undefined || seenOnChain || resumed)][n - 1];
+    const finished = [ordered, payment !== undefined || seenOnChain, paid][n - 1];
+    if (n === 3 && dead) return 'dead';
     return finished ? 'done' : reached ? 'active' : 'locked';
   };
   // The buyer's own sheet: whole panes of 100, spent stamps cancelled.
   const sheetSize = Math.max(100, Math.ceil(tokens / 100) * 100);
-  const lastExchange = exchanges[0];
+  const pack = probe?.offer?.pack ?? 100;
+  const price = probe?.offer?.price_zec ?? '0.001';
+  // Tokens are accepted while their key is listed: its 7-day epoch plus 24 h of grace.
+  const worksUntil = probe?.challenge ? keyRetiresAt(b64url(probe.challenge.tokenKey), directory) : undefined;
 
   const probePanel = probe && (
     <div className="stack probe" data-testid="probe" aria-live="polite">
@@ -411,11 +451,11 @@ export function Use() {
           <dd className="mono break">{probe.keyId}</dd>
         </dl>
       )}
-      {probe.refused && (
-        <div className="refusal" role="alert" data-testid="key-refused">
-          <strong>Returned.</strong> {probe.refused}
-        </div>
-      )}
+    </div>
+  );
+  const keyRefusal = probe?.refused && (
+    <div className="refusal" role="alert" data-testid="key-refused">
+      <strong>Returned.</strong> {probe.refused}
     </div>
   );
 
@@ -423,14 +463,17 @@ export function Use() {
     <>
       <div className="masthead buyer">
         <div className="wrap">
-          <h1>Call an API privately</h1>
-          <p className="lede">Buy 100 calls once, then ask questions. Your browser makes the tokens; the server signs them without seeing them, and each works once.</p>
+          <h1>100 API calls, paid once</h1>
+          <p className="lede">
+            Pay {price} TAZ once and ask this API {pack} questions. Each call spends one token made in your browser: the API can check it, but cannot tie it to your
+            payment or to your other calls.
+          </p>
           <p className="selvage">
             <span>App</span>
             <span>Zcash testnet</span>
             <span>Tokens stay in this browser</span>
           </p>
-          {!client && <p aria-live="polite">Checking the issuer key…</p>}
+          {!client && <p aria-live="polite">Checking the price and the issuer key…</p>}
         </div>
       </div>
 
@@ -438,32 +481,37 @@ export function Use() {
         <div className="stack">
           {buying && (
             <section className="panel" aria-labelledby="buy-h">
-              <h2 id="buy-h">Buy a sheet of 100 calls</h2>
+              <h2 id="buy-h">Buy {pack} calls</h2>
+              <dl className="offer" data-testid="offer">
+                <div>
+                  <dt>Price</dt>
+                  <dd>{price} TAZ, paid once</dd>
+                </div>
+                <div>
+                  <dt>Calls</dt>
+                  <dd>{pack}, one token each</dd>
+                </div>
+                <div>
+                  <dt>Tokens work until</dt>
+                  <dd data-testid="works-until">{worksUntil ? utc(worksUntil) : probe?.refused ? 'not offered' : 'checking…'}</dd>
+                </div>
+              </dl>
+              <p className="muted">
+                Zcash testnet: TAZ has no value. Tokens are tied to this week's issuer key, so they stop working on the date above, whenever you buy.
+              </p>
+              {keyRefusal}
               <ol className="steps">
                 <li className={stepClass(1)}>
-                  <h3>Get the price</h3>
-                  <form onSubmit={onAsk} className="stack">
-                    <div>
-                      <label htmlFor="prompt">Question</label>
-                      <textarea id="prompt" value={prompt} maxLength={4000} onChange={(e) => setPrompt(e.target.value)} onKeyDown={submitOnModEnter} />
-                    </div>
-                    <button type="submit" className={challengeOk ? undefined : 'primary'} disabled={!client || busy}>
-                      {challengeOk ? 'Ask again without a token' : 'Ask without a token'}
-                    </button>
-                  </form>
-                  {probePanel}
-                </li>
-                <li className={stepClass(2)}>
-                  <h3>Buy 100 calls</h3>
+                  <h3>Buy</h3>
                   <div className="stack">
                     <button type="button" className="primary" onClick={() => void onBuy()} disabled={!challengeOk || ordered || busy}>
-                      Buy {probe?.offer?.pack ?? 100} calls
+                      Buy {pack} calls
                     </button>
-                    {blinding && (
+                    {blinding && !ordered && (
                       <div aria-live="polite">
-                        <progress max={blinding.total} value={blinding.done} aria-label="Blinding tokens" />
-                        <p className="muted mono">
-                          blinded {blinding.done} of {blinding.total} in this browser{blinding.ms !== undefined ? `, ${blinding.ms} ms` : ''}
+                        <progress max={blinding.total} value={blinding.done} aria-label="Preparing your tokens" />
+                        <p className="muted">
+                          Preparing your {blinding.total} tokens in this browser: {blinding.done} of {blinding.total}
                         </p>
                       </div>
                     )}
@@ -474,45 +522,35 @@ export function Use() {
                     )}
                     {purchase && (
                       <div data-testid="order">
-                        <dl className="kv">
-                          <dt>Pay to</dt>
-                          <dd className="mono break">{purchase.pay_uri.slice(6, purchase.pay_uri.indexOf('?'))}</dd>
-                          <dt>Amount</dt>
-                          <dd className="mono">{probe?.offer?.price_zec} TAZ</dd>
-                          <dt>Expires</dt>
-                          <dd className="mono">{new Date(purchase.expires_at).toUTCString()}</dd>
-                        </dl>
-                        <p className="muted">
-                          A fresh shielded address for this purchase alone.{paid ? '' : ' Keep this tab open until your tokens arrive: the blinding state lives here.'}
+                        <p>
+                          {resumed ? 'Your order from your last visit.' : 'Order placed.'} Pay within 24 hours, by {new Date(purchase.expires_at).toUTCString().replace(':00 GMT', ' UTC')}.
                         </p>
+                        {!paid && (
+                          <p className="muted">
+                            {persistent
+                              ? 'You can close this page: the order is saved in this browser, and your tokens are collected when you come back.'
+                              : 'Keep this tab open until your tokens arrive: this browser cannot save the order.'}
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
                 </li>
-                <li className={stepClass(3)}>
+                <li className={stepClass(2)}>
                   <h3 ref={payHeading} tabIndex={-1}>
                     Pay
                   </h3>
-                  {purchase && !paid && !dead && (
+                  {purchase && !paid && !dead && !seenOnChain && (
                     <div className="stack">
+                      {resumed && payment === undefined && <p className="muted">If you already paid, there is nothing to do: the payment is picked up from the chain.</p>}
                       <p>
                         <strong>Fare's demo wallet can pay for you.</strong> In real use you pay from your own wallet, and Fare never sees it.
                       </p>
                       <div className="row">
                         <button type="button" className="primary" onClick={() => void onDemoPay('full')} disabled={paying || payment !== undefined}>
-                          {paying ? 'Paying… (building the proof)' : 'Pay 0.001 TAZ with the demo payer'}
+                          {paying ? 'Paying… (building the proof)' : `Pay ${price} TAZ with the demo payer`}
                         </button>
                       </div>
-                      {payment && (
-                        <div className="ok" data-testid="demo-paid">
-                          <strong>Sent {payment.amount_zec} TAZ.</strong> Paid by the demo wallet, not by you.
-                          {payment.txids.map((t) => (
-                            <div key={t}>
-                              txid <Txid txid={t} />
-                            </div>
-                          ))}
-                        </div>
-                      )}
                       {payError && (
                         <div className="refusal" role="alert">
                           <strong>Demo payer refused.</strong> {payError}
@@ -530,10 +568,22 @@ export function Use() {
                                 I paid it
                               </button>
                             </div>
-                            <p className="muted">From a shielded testnet balance, in a wallet that supports Ironwood (NU6.3). No memo: the address identifies the purchase.</p>
+                            <p className="muted">
+                              From a shielded testnet balance, in a wallet that supports Ironwood (NU6.3). The address is fresh, for this purchase alone; no memo is needed.
+                            </p>
                           </div>
                         </div>
                       </details>
+                    </div>
+                  )}
+                  {payment && !paid && (
+                    <div className="ok" data-testid="demo-paid">
+                      <strong>Sent {payment.amount_zec} TAZ.</strong> Paid by the demo wallet, not by you.
+                      {payment.txids.map((t) => (
+                        <div key={t}>
+                          txid <Txid txid={t} />
+                        </div>
+                      ))}
                     </div>
                   )}
                   {payment && (paid || dead) && (
@@ -545,11 +595,11 @@ export function Use() {
                     </p>
                   )}
                 </li>
-                <li className={stepClass(4)}>
+                <li className={stepClass(3)}>
                   <h3 ref={waitHeading} tabIndex={-1}>
                     Wait for one confirmation
                   </h3>
-                  {status && (
+                  {status && (payment !== undefined || waitFrom !== undefined || resumed || seenOnChain || dead) && (
                     <div data-testid="status">
                       {status.step >= 0 && (
                         <div className="track" aria-hidden="true">
@@ -588,16 +638,37 @@ export function Use() {
                   )}
                 </li>
               </ol>
+              <details className="more">
+                <summary>What happens in your browser</summary>
+                <div className="stack">
+                  <p>
+                    Before anything is ordered, the API's 402 is checked: its issuer key must be the one the issuer publishes, so the API cannot hand you a key of your own.
+                  </p>
+                  {probePanel}
+                  {blinding && (
+                    <p className="muted mono">
+                      blinded {blinding.done} of {blinding.total} in this browser{blinding.ms !== undefined ? `, ${blinding.ms} ms` : ''}
+                    </p>
+                  )}
+                  <p className="muted">
+                    Your browser makes {pack} random tokens and blinds them. The issuer signs the blinded tokens once the payment has one confirmation, and your browser unblinds the
+                    signatures. The issuer never sees a token, so no call can be matched to this payment.
+                  </p>
+                </div>
+              </details>
             </section>
           )}
 
           <section className="panel" aria-labelledby="use-h">
             <h2 id="use-h" ref={useHeading} tabIndex={-1}>
-              Use
+              Ask
             </h2>
             {paid && (
               <p className="ok">
-                <strong>{issued} tokens unblinded in this browser.</strong> The issuer signed them without seeing them.
+                <strong>
+                  {elsewhere ? `${issued} calls ready, collected in another tab.` : `${issued} calls ready.`}
+                </strong>{' '}
+                Your browser unblinded the tokens; the issuer never saw them.
               </p>
             )}
             {!canUse && !paid && <p className="muted">Your questions go here once you hold tokens.</p>}
@@ -612,16 +683,8 @@ export function Use() {
                 <button type="submit" className="primary" disabled={!canUse || busy}>
                   Ask with one token
                 </button>
-                <button type="button" onClick={() => void onReplay()} disabled={!lastAuth || busy}>
-                  Replay my last token
-                </button>
               </div>
             </form>
-            {lastExchange?.replay && lastExchange.kind === 'refused' && (
-              <div key={lastExchange.id} className="bounce">
-                <Postmark top="ALREADY CANCELLED" bottom="TOKEN REUSED" center="401" tone="refused" strike size={110} label="Replay refused: this token was already spent" />
-              </div>
-            )}
             {exchanges.length > 0 && (
               <ul className="answers" data-testid="answers">
                 {exchanges.map((x) => (
@@ -632,8 +695,8 @@ export function Use() {
                         {x.simulated && <span className="tag sim">simulated</span>} {x.text.replace(/^\[simulated\]\s*/, '')}
                       </p>
                     ) : (
-                      <div className="refusal" role="alert" data-testid={x.replay ? 'replay-refused' : 'call-refused'}>
-                        <strong>{x.kind === 'model_failed' ? 'Model failed.' : x.replay ? 'Already cancelled.' : 'Refused.'}</strong> {x.text}
+                      <div className="refusal" role="alert" data-testid="call-refused">
+                        <strong>{x.kind === 'model_failed' ? 'Model failed.' : 'Refused.'}</strong> {x.text}
                       </div>
                     )}
                   </li>
@@ -642,22 +705,55 @@ export function Use() {
             )}
           </section>
 
-          <details className="more">
+          <details className="more refusals">
             <summary>Test the refusals</summary>
             <div className="stack">
-              <p>Fare shows what it refuses, not only what works. Try each one:</p>
-              <label className="check" htmlFor="tamper">
-                <input id="tamper" type="checkbox" checked={tamper} onChange={(e) => setTamper(e.target.checked)} />
-                Simulate a malicious API that swaps the challenge key
-              </label>
-              <p className="muted">Then ask without a token: the browser refuses before ordering, because a key the directory does not list could single you out.</p>
-              <p className="muted">Replay my last token: the API answers 401 token_reused.</p>
-              {purchase && !paid && !dead && payment === undefined && (
-                <button type="button" onClick={() => void onDemoPay('half')} disabled={paying}>
-                  Pay half (shows underpaid)
-                </button>
-              )}
-              <p className="muted">Pay half: the purchase stays postage due and no tokens are signed.</p>
+              <p>Fare shows what it refuses, not only what works. None of these is part of normal use.</p>
+              <div className="stack">
+                <h3>Replay a spent token</h3>
+                <p className="muted">Sends the last token again. The API answers 401 token_reused: each token works once.</p>
+                <div className="row">
+                  <button type="button" onClick={() => void onReplay()} disabled={!lastAuth || busy}>
+                    Replay my last token
+                  </button>
+                </div>
+                {replay?.kind === 'refused' && (
+                  <div key={replay.id} className="bounce">
+                    <Postmark top="ALREADY CANCELLED" bottom="TOKEN REUSED" center="401" tone="refused" strike size={110} label="Replay refused: this token was already spent" />
+                  </div>
+                )}
+                {replay && (
+                  <div className="refusal" role="alert" data-testid="replay-refused">
+                    <strong>{replay.kind === 'refused' ? 'Already cancelled.' : 'Replay.'}</strong> {replay.text}
+                  </div>
+                )}
+              </div>
+              <div className="stack">
+                <h3>A malicious API</h3>
+                <label className="check" htmlFor="tamper">
+                  <input id="tamper" type="checkbox" checked={tamper} onChange={(e) => setTamper(e.target.checked)} />
+                  Simulate a malicious API that swaps the challenge key
+                </label>
+                <p className="muted">Then ask without a token: the browser refuses before ordering, because a key the directory does not list could single you out.</p>
+                <div className="row">
+                  <button type="button" onClick={() => void onProbe()} disabled={!client || busy}>
+                    Ask without a token
+                  </button>
+                </div>
+              </div>
+              <div className="stack">
+                <h3>Underpay</h3>
+                <p className="muted">Pays half the price: the purchase stays postage due and no tokens are signed.</p>
+                {purchase && !paid && !dead && payment === undefined && !seenOnChain ? (
+                  <div className="row">
+                    <button type="button" onClick={() => void onDemoPay('half')} disabled={paying}>
+                      Pay half (shows underpaid)
+                    </button>
+                  </div>
+                ) : (
+                  <p className="muted">Available after you place an order and before you pay it.</p>
+                )}
+              </div>
             </div>
           </details>
         </div>
@@ -670,7 +766,7 @@ export function Use() {
                 {usable}
               </span>
             </div>
-            <p className="muted">tokens left for this API</p>
+            <p className="muted">calls left on this API</p>
             {tokens > 0 ? (
               <Pane large issued={sheetSize} spent={sheetSize - tokens} label={`Your sheet: ${tokens} unspent of ${sheetSize}`} />
             ) : (
@@ -680,12 +776,13 @@ export function Use() {
               {tokens} unspent
             </p>
             {groups.map((g) => (
-              <p key={g.keyId} className="mono muted">
-                {g.count} under key {g.keyId.slice(0, 12)}, {g.retiresAt ? `usable until ${new Date(g.retiresAt * 1000).toUTCString()}` : 'key no longer listed'}
+              <p key={g.keyId} className="muted">
+                {g.retiresAt ? `Work until ${utc(g.retiresAt)}` : 'Their key is no longer listed: the API will refuse them.'}
+                {groups.length > 1 ? ` (${g.count} under key ${g.keyId.slice(0, 12)})` : ''}
               </p>
             ))}
             <p className="muted">
-              Kept in this browser's IndexedDB{persistent ? '' : ' (unavailable here, so only for this tab)'}. They leave it one at a time, each inside a single call.
+              Kept in this browser's IndexedDB{persistent ? ', shared by its tabs' : ' (unavailable here, so only for this tab)'}. They leave it one at a time, each inside a single call.
             </p>
             <div className="row">
               {confirmForget ? (
@@ -734,11 +831,16 @@ export function Use() {
               </button>
             </section>
           )}
-          {!buying && probePanel && (
-            <details className="more">
-              <summary>The 402 this sheet answered</summary>
-              {probePanel}
-            </details>
+          {!buying && (
+            <>
+              {keyRefusal}
+              {probePanel && (
+                <details className="more">
+                  <summary>The 402 this sheet answered</summary>
+                  {probePanel}
+                </details>
+              )}
+            </>
           )}
           <p className="muted">
             <Link to="/proof#ledger">See what the server saw</Link>

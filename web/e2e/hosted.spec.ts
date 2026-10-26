@@ -45,7 +45,8 @@ test('hosted: demo payer buys a pack, 3 calls, replay refused', async ({ page, r
   await shot(page, '01-landing');
 
   await page.goto('/app');
-  await page.getByRole('button', { name: 'Ask without a token' }).click();
+  await expect(page.getByTestId('works-until')).toContainText('UTC');
+  await page.getByText('What happens in your browser').click();
   await expect(page.getByTestId('probe')).toContainText('key matches the published directory');
   await shot(page, '02-402');
 
@@ -79,6 +80,7 @@ test('hosted: demo payer buys a pack, 3 calls, replay refused', async ({ page, r
   const answers = await page.getByTestId('answers').locator('li').allInnerTexts();
   record.answers = answers;
 
+  await page.getByText('Test the refusals').click();
   await page.getByRole('button', { name: 'Replay my last token' }).click();
   await expect(page.getByTestId('replay-refused')).toContainText('401 token_reused');
   await shot(page, '06-calls-and-replay');
