@@ -1,6 +1,5 @@
 // The demo API's answer source: Claude through the Anthropic SDK when the host has
-// credentials, otherwise a canned responder whose every answer is labeled simulated
-// (owner decision, Oct 24).
+// credentials, otherwise a canned responder whose every answer is labeled simulated.
 //
 // Privacy: the model provider sees the prompt, as any LLM API would (request content is
 // a stated residual). It never sees who asked: no user id, no client address and no

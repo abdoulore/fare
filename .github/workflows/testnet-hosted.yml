@@ -2,7 +2,7 @@ name: Testnet hosted run
 
 # One real run against the deployed site: the demo payer pays 0.001 TAZ for a pack, the
 # browser unblinds 100 tokens, makes 3 calls and replays one. Spends testnet TAZ from the
-# demo payer, so the owner dispatches it. Screenshots and run.json are uploaded.
+# demo payer, so a maintainer dispatches it. Screenshots and run.json are uploaded.
 
 on:
   workflow_dispatch:

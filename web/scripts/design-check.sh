@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Dev-time design check with impeccable (owner approved, telemetry off). Never shipped:
+# Dev-time design check with impeccable (telemetry off). Never shipped:
 # impeccable is a devDependency and nothing from it reaches the built site.
 #
 # Scans the source, then /, /app, /developers and /proof rendered on the local e2e stack, at desktop

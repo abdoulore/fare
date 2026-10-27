@@ -1,4 +1,4 @@
-// The hosted demo's payer (owner decision D3): pays a purchase's zcash: URI with
+// The hosted demo's payer: pays a purchase's zcash: URI with
 // fare-wallet, so a visitor without an Ironwood testnet wallet can still buy a pack.
 //
 //   POST /pay {pay_uri, mode: "full" | "half"}   -> 200 {txids, amount_zec, paid_by}

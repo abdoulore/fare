@@ -20,8 +20,8 @@ npm run typecheck
 
 ## What it does on a 402
 
-1. Parses `WWW-Authenticate: PrivateToken ...`. It needs exactly one type 2 challenge with an empty redemption context (invariant 9).
-2. Compares the challenge's `token-key` with the pinned key. On a mismatch it re-reads the issuer directory: a key listed there is a rotation, so it becomes the pin and tokens under keys the directory dropped are discarded. Any other key aborts with `UnpinnedKeyError` before anything is ordered (invariant 6): a per-user key would link calls.
+1. Parses `WWW-Authenticate: PrivateToken ...`. It needs exactly one type 2 challenge with an empty redemption context ([invariant 9](../CONTRIBUTING.md#privacy-invariants)).
+2. Compares the challenge's `token-key` with the pinned key. On a mismatch it re-reads the issuer directory: a key listed there is a rotation, so it becomes the pin and tokens under keys the directory dropped are discarded. Any other key aborts with `UnpinnedKeyError` before anything is ordered ([invariant 6](../CONTRIBUTING.md#privacy-invariants)): a per-user key would link calls.
 3. Spends a stored token for that challenge, if there is one.
 4. Otherwise, with a payer callback: blinds `pack` nonces, orders them (`POST /fare/purchases`), hands `pay_uri` to the payer, polls until paid, unblinds every signature (each is checked against the pinned key), stores the tokens and spends one. Without a payer: `PaymentRequired` with the origin's `Fare-Offer`.
 

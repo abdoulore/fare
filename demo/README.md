@@ -13,7 +13,7 @@ The API also answers `GET /v1/stats` (redemption and refusal counts per key, cou
 
 ## The demo payer
 
-Owner decision D3: the hosted demo can pay for a visitor, so anyone can try the flow without an Ironwood testnet wallet. The page says so on every payment: "Paid by Fare's demo wallet."
+The hosted demo can pay for a visitor, so anyone can try the flow without an Ironwood testnet wallet. The page says so on every payment: "Paid by Fare's demo wallet."
 
 - It is a separate service, not a route on the origin, so the origin still never sees a purchase. It sees a purchase address and the visitor's IP; never a purchase id or a token.
 - It pays only `zcash:utest1...?amount=0.001` (the pack price), in full or half (`mode: "half"` demonstrates underpaid); each address once; 5 packs an hour in total (`PAYER_MAX_PER_HOUR`) and 2 per visitor; one payment at a time.
@@ -22,7 +22,7 @@ Owner decision D3: the hosted demo can pay for a visitor, so anyone can try the 
 
 ## Model answers: real or simulated
 
-With `ANTHROPIC_API_KEY` (or `ANTHROPIC_AUTH_TOKEN`) set, answers come from Claude through the Anthropic SDK: model `claude-opus-5-5` (override with `FARE_MODEL`), effort `low`, at most 1024 output tokens, and server-side refusal fallback (`fallbacks: "default"`). Without credentials, a canned responder answers, and every answer, the API's `/` page, the startup log and the panel say **simulated** (owner decision, Oct 24).
+With `ANTHROPIC_API_KEY` (or `ANTHROPIC_AUTH_TOKEN`) set, answers come from Claude through the Anthropic SDK: model `claude-opus-5-5` (override with `FARE_MODEL`), effort `low`, at most 1024 output tokens, and server-side refusal fallback (`fallbacks: "default"`). Without credentials, a canned responder answers, and every answer, the API's `/` page, the startup log and the panel say **simulated**.
 
 The model provider sees the prompt, as with any LLM API. It does not see who asked: no user id, no client address and no token goes upstream.
 
@@ -38,7 +38,7 @@ cd demo && npm ci && npm run api          # API on 127.0.0.1:8080, panel on 127.
 cd demo && CALLS=5 npm run agent
 ```
 
-Chain access needs a machine that can reach lightwalletd; see `AGENTS.md`.
+Chain access needs a machine that can reach lightwalletd; see [Chain access](../CONTRIBUTING.md#chain-access).
 
 ## Rules
 

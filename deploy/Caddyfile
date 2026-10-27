@@ -1,4 +1,4 @@
-# Fare on one VPS (owner decision D2). Caddy terminates TLS and proxies to services that
+# Fare on one VPS. Caddy terminates TLS and proxies to services that
 # listen on loopback only. No access log is configured: Caddy writes none by default, so
 # no client address is recorded next to anything (invariant 8).
 #

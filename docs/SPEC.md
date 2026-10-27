@@ -1,26 +1,27 @@
-# Fare: Build Spec
+# Fare: design
 
-Oct 23, 2026 · Ore · updated Oct 24 (testnet, fare-wallet)
+Written Oct 23, 2026; updated through Oct 27, 2026.
 
-Live version: https://claude.ai/artifact/BU5JV4NPxikhGXofRmdHxF
+## Summary and design decisions
 
-## Summary and locked decisions
+Fare sells API access for shielded ZEC and redeems it with unlinkable tokens: the provider verifies every call but cannot tie a call to the purchase, the payer, or the caller's other calls.
 
-Fare sells API access for shielded ZEC and redeems it with unlinkable tokens: the provider verifies every call but cannot tie a call to the purchase, the payer, or the caller's other calls. Submissions close Oct 28, 2026 at 23:59 UTC (00:59 Lagos the next day).
-
-| Decision | Locked choice |
+| Decision | Choice |
 | --- | --- |
-| Track | Shielded Payments |
-| Tokens | Privacy Pass publicly verifiable tokens, Blind RSA 2048 (RFC 9578 type 2) |
-| Issue tokens at | 1 confirmation (about 75 s) |
-| Payment matching | Fresh shielded address per purchase, matched by diversifier index. No memo, no txid lookups |
-| Demo payer | `fare-wallet`, a headless testnet payer (owner, Oct 24). Consumer wallets are not used |
-| Demo API | LLM proxy an agent calls in a loop. With no model API key on the demo host, a canned responder labeled "simulated" (owner, Oct 24) |
-| Proof for judges | Demo merchant viewing key published, so anyone can verify every purchase |
-| Networks | Testnet for the canary and the demo (owner, Oct 24). Offline fixtures for development |
-| Issuer signing | Native OpenSSL blind RSA, each signature verified before release (owner, Oct 24) |
-| Pack and price | One pack: 100 calls for 0.001 TAZ (owner, Oct 24) |
-| Issuer key epoch | 7 days, previous key valid for a 24 h grace window (owner, Oct 24) |
+| Tokens | Privacy Pass publicly verifiable tokens, Blind RSA 2048, PSS (RFC 9578 type 2) |
+| Issue tokens at | 1 confirmation (about 75 s). Never from the mempool alone |
+| Payment matching | Fresh shielded-only address per purchase, matched by diversifier index. No memo, no transaction lookups |
+| Demo payer | `fare-wallet`, a headless testnet payer. Consumer wallets are not used: on Oct 24 Noir's testnet build signed with the pre-Ironwood branch id |
+| Demo API | LLM proxy an agent calls in a loop. With no model API key on the host, a canned responder labeled "simulated" on every answer |
+| Public proof | The demo merchant's incoming viewing key is published, so anyone can verify every payment |
+| Networks | Testnet for the canary and the demo, server `testnet.zec.rocks`. Offline fixtures for development |
+| Issuer signing | Native OpenSSL blind RSA, each signature verified against the public key before release |
+| Pack and price | One pack: 100 calls for 0.001 TAZ. The issuer refuses any other N |
+| Issuer key epoch | 7 days, previous key valid for a 24 h grace window |
+| Hosting | One VPS behind Caddy: the static `web/` build plus `api.`, `issuer.` and `payer.` subdomains; scanner and panel on loopback only. DNS only, no CDN proxy in front |
+| Hosted payer | Fare's demo payer (server-side `fare-wallet`, labeled as Fare's, 5 packs an hour, at most 0.001 TAZ each), and a QR for the visitor's own Ironwood wallet |
+| Public server view | Purchase index, amount, height, status, redemption counts per key, anonymity-set size. Never purchase ids: an id fetches signatures |
+| Hosted answers | Real Claude answers if the host has `ANTHROPIC_API_KEY`, otherwise simulated and labeled on every answer |
 
 ## Architecture
 
@@ -61,7 +62,7 @@ No party holds both ends: the issuer sees purchases and blinded messages, the or
 | lightwalletd operator | Scanner IP, block range requested, mempool snapshots | Which transactions are the merchant's |
 | Issuer | Purchase id, price, amount and height paid, N blinded messages, client IP at order | The tokens those messages become |
 | Origin | Each token, its arrival time, request content, client IP | The purchase behind a token; whether two calls share a buyer |
-| Judges, with the demo viewing key | Every purchase: amount, index, height | Tokens, calls, payers |
+| Anyone with the published demo viewing key | Every purchase: amount, index, height | Tokens, calls, payers |
 
 **Leak checklist (each one tested; the failure-path table names the tests):**
 
@@ -86,7 +87,7 @@ No party holds both ends: the issuer sees purchases and blinded messages, the or
 
 ## Failure paths
 
-Every row below is either a test that runs in CI or a step in the demo video, so judges see the system refuse things, not just accept them.
+Every row below is a test that runs in CI or a recorded testnet run, so the system is shown refusing things, not only accepting them.
 
 | Case | Expected behavior | Proven by |
 | --- | --- | --- |
@@ -113,7 +114,7 @@ Every row below is either a test that runs in CI or a step in the demo video, so
 
 The canary passes when a real shielded payment on testnet is matched to the right purchase from compact blocks alone. Until it passes, nothing token-shaped gets built.
 
-Consumer wallets failed it on Oct 24: Noir Wallet's testnet build signs with the pre-Ironwood consensus branch id, and nodes reject the transaction (`transaction uses an incorrect consensus branch id`). The payer is now `fare-wallet` (see `wallet/README.md`). The sandbox cannot reach lightwalletd, so the run happens on a GitHub runner, dispatched by the owner. Cost: testnet coins only.
+Consumer wallets failed it on Oct 24: Noir Wallet's testnet build signs with the pre-Ironwood consensus branch id, and nodes reject the transaction (`transaction uses an incorrect consensus branch id`). The payer is now `fare-wallet` (see `wallet/README.md`). The scanner and the wallet need direct access to lightwalletd, so the run happens on a GitHub runner. Cost: testnet coins only.
 
 One-time setup:
 
@@ -128,7 +129,7 @@ The run: `testnet-canary.yml` with `pay: true` and the payer's birthday. It rebu
 - [x] `CANARY PASS` names the txid `fare-wallet` printed, at diversifier index base+0: `fd1e9ee3f90c0e3bd8bf874e86352ab8fb085158190c5242a27e0afa623af9d9`.
 - [x] `underpay` shows `underpaid (short 0.0005 ZEC)` and never `paid`: `0346de58cdaa73d7285e7e91448effa2c437978b44cfdf1bc72a4cf9b866652b`.
 - [x] The scan summary says `No transaction lookups` and the pay URI has no memo.
-- [ ] A testnet explorer shows the transaction with no visible amount or address; screenshot it for the README.
+- [x] A testnet explorer shows the transaction with no visible amount or address: [`docs/explorer/0-canary-paid.png`](explorer/0-canary-paid.png).
 
 **Fail, and what it means:**
 
@@ -137,50 +138,15 @@ The run: `testnet-canary.yml` with `pay: true` and the payer's birthday. It rebu
 - `pay` fails with insufficient funds: fund the payer or wait for its notes to confirm.
 - The server rejects the payer's transaction: its message names the reason; fix the payer before anything else.
 
-## Day plan
+## Risks
 
-One gate, then the build, submission with a buffer: nothing after the canary started until the canary passed. The gate work began Oct 23; everything else was built on Oct 24, as the commit dates show.
-
-**Oct 23 (gate)**
-
-- [x] Scanner: mint, scan, status, viewing key; 11 tests green. Token canary: 100 tokens issued, verified, 11 of 11 refusal and unlinkability checks
-
-**Oct 24**
-
-- [x] `fare-scanner check`, `fare-wallet` (headless testnet payer), canary and wallet workflows, CI
-- [x] Testnet canary passes (see Canary): [run 4](https://github.com/abdoulore/fare/actions/runs/40084407257)
-- [x] Issuance: `fare-scanner serve`; issuer `POST /fare/purchases`, `GET /fare/purchases/{id}`, epoch RSA key, issuer directory; client SDK: blind, order, poll, finalize, pin key
-- [x] Redemption: origin middleware (402 challenge, verify, spent-nonce store); demo LLM proxy and an agent that calls it; server-view panel with the anonymity-set size
-- [x] Failure paths: origin and SDK tests (reuse, forged, retired epoch, unpinned key); scanner follow mode with a cursor and a reorg rescan window
-- [x] Testnet run: paid, underpaid and second-payment purchases with real txids, paid by `fare-wallet` ([run](https://github.com/abdoulore/fare/actions/runs/40098320054)); demo viewing key published in README
-- [x] Threat model and README: what is real, what is mocked, residuals; CI runs every package
-- [x] Frontend (`web/`), demo payer, one-VPS deployment; live at https://fare.moonrider.online; paid hosted run; explorer screenshots
-
-**Oct 28: ship**
-
-- [ ] Demo video, about 3 minutes
-- [ ] Repo public, submission text, submitted by 20:00 Lagos time
-
-## Submission checklist and open risks
-
-The rules that can disqualify us are mechanical, so they are tracked as tasks.
-
-- [ ] One account registers and submits: Ore's (rule 1)
-- [ ] Every commit dated after Sep 28; the first one is Oct 23 (rule 2)
-- [ ] Repo public by the deadline (rule 3)
-- [ ] Entered in Shielded Payments only (rule 4)
-- [ ] README states what is real and what is mocked, how to run it, and the residuals
-- [ ] On-chain proof: testnet txids, testnet explorer screenshots, published demo viewing key
-- [ ] Video shows the refusals too: underpayment, token reuse, unpinned key
-
-| Risk | Fallback |
+| Risk | How it was handled |
 | --- | --- |
 | `privacypass-ts` issuer too slow in Node (resolved Oct 23) | Measured: 300 ms per signature in the library, 0.42 ms with native OpenSSL, byte-identical output. The issuer signs natively and checks each signature before release |
-| Default lightwalletd lacks Ironwood actions | `--server` to another Ironwood-ready server, or self-host Zaino |
+| Default lightwalletd lacks Ironwood actions | Did not happen with `testnet.zec.rocks`. `--server` points the scanner at another Ironwood-ready server, or a self-hosted Zaino |
 | Consumer wallets cannot pay on testnet after NU6.3 (seen Oct 24 with Noir) | `fare-wallet` pays instead |
 | Payer funds still in Orchard | `zcash_client_backend` plans turnstile crossings; `balance` shows the split |
-| Tiny anonymity set in the demo | Show the set size honestly; run several clearly labeled test buyers to show it grow |
-| Judges read tokens as off-chain | Frame it: payment settles on Zcash, tokens are an IETF standard, the privacy claim covers both and is tested |
+| Tiny anonymity set in the demo | The panel and the Proof page show the set size under each key, and the README states it as a residual |
 
 ## Sources
 

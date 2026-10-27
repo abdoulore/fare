@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sets up or updates Fare on one Debian or Ubuntu VPS (owner decision D2). Run as root:
+# Sets up or updates Fare on one Debian or Ubuntu VPS. Run as root:
 #
 #   FARE_TESTNET_UFVK=uviewtest1... ./deploy/setup.sh [git-ref]
 #

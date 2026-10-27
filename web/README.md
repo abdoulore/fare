@@ -11,7 +11,7 @@ The Fare frontend: buy a pack of 100 calls in shielded testnet ZEC, ask question
 
 `/try`, `/server` and `/how` from the first version redirect to `/app`, `/proof#ledger` and `/proof#who-sees-what`.
 
-The look is "Sheet of stamps" (owner decision, Oct 25): a pack is a sheet of 100 stamps, each call cancels one with a postmark that names no sender. The direction contract is in `.impeccable/surfaces/src-app-tsx.md`; `PRODUCT.md` is the product record impeccable reads. Both are development files and are never served.
+The look is "Sheet of stamps": a pack is a sheet of 100 stamps, each call cancels one with a postmark that names no sender. The direction contract is in `.impeccable/surfaces/src-app-tsx.md`; `PRODUCT.md` is the product record impeccable reads. Both are development files and are never served.
 
 ## Privacy properties of the page
 
@@ -25,7 +25,7 @@ The look is "Sheet of stamps" (owner decision, Oct 25): a pack is a sheet of 100
 ```
 npm ci
 npm test                      # Vitest: status mapping, CSP, pinning, IndexedDB storage and spending
-npx playwright test           # builds, starts e2e/stack.ts, runs 27 browser tests
+npx playwright test           # builds, starts e2e/stack.ts, runs the browser tests
 npm run dev                   # http://127.0.0.1:5173 against local services
 ```
 

@@ -76,7 +76,7 @@ If the scan reports zero Ironwood actions over hundreds of blocks, the server is
 
 Real: key derivation, address minting, note encryption and decryption, compact block parsing, attribution, status logic. `tests/attribution.rs` builds genuinely encrypted Ironwood and Orchard notes and wraps them in the same protobuf lightwalletd returns.
 
-The live network path is proven on testnet: the [canary](https://github.com/abdoulore/fare/actions/runs/40084407257) (gate 1), `serve`, and the [failure-paths run](https://github.com/abdoulore/fare/actions/runs/40098320054).
+The live network path is proven on testnet: the [canary](https://github.com/abdoulore/fare/actions/runs/40084407257), `serve`, and the [failure-paths run](https://github.com/abdoulore/fare/actions/runs/40098320054).
 
 ## Tests
 

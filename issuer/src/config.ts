@@ -1,4 +1,4 @@
-// Locked decisions (owner, Oct 24). Changing any of these needs the owner.
+// Design decisions (docs/SPEC.md). Changing one changes what clients and the origin expect.
 
 /** Calls per pack. The issuer refuses any other N. */
 export const PACK = 100;

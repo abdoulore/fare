@@ -20,7 +20,7 @@ npm test            # 11 tests, end to end with the real issuer and SDK
 ## Behavior
 
 - **No token:** `402` with `WWW-Authenticate: PrivateToken challenge=..., token-key=...` (one type 2 challenge, empty redemption context, this origin's name, the newest directory key) and `Fare-Offer: {"pack", "price_zec", "issuer"}`.
-- **A token:** checked in the order invariant 9 sets. The first failure answers `401 {error}`:
+- **A token:** checked in the order [invariant 9](../CONTRIBUTING.md#privacy-invariants) sets. The first failure answers `401 {error}`:
 
 | Check | Refusal |
 | --- | --- |
@@ -35,6 +35,6 @@ npm test            # 11 tests, end to end with the real issuer and SDK
 
 ## Privacy
 
-- The origin shares nothing with the issuer but the public directory (invariant 7). It never sees a purchase or a payment.
-- `origin-data/spent/<key id>/<nonce>` is one empty file per spent nonce. No time, no client address, no request content (invariant 8). Nonces in the older `spent/<key id>.txt` files are copied into this layout at start, and the old files are kept.
+- The origin shares nothing with the issuer but the public directory ([invariant 7](../CONTRIBUTING.md#privacy-invariants)). It never sees a purchase or a payment.
+- `origin-data/spent/<key id>/<nonce>` is one empty file per spent nonce. No time, no client address, no request content ([invariant 8](../CONTRIBUTING.md#privacy-invariants)). Nonces in the older `spent/<key id>.txt` files are copied into this layout at start, and the old files are kept.
 - It logs nothing. A test fails the build if the source logs, reads client identity, or mentions purchases.

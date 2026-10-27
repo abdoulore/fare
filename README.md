@@ -1,5 +1,7 @@
 # Fare
 
+[![CI](https://github.com/abdoulore/fare/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/abdoulore/fare/actions/workflows/ci.yml)
+
 Pay once in shielded ZEC. Then every API call carries a single-use token that neither the API nor the issuer that sold it can match to your payment. Tokens do not hide your IP address, the timing of your requests or what you ask; see [Residuals](#residuals).
 
 Built for ZECATHON 2026, Shielded Payments track. Runs on Zcash testnet.
@@ -36,21 +38,22 @@ It reveals incoming payments to this demo account only: amount, height, address 
 | +5 | 0.0005 | 4,536,052 | `0c3e538be90d9a5bfa60463314a6cd2dd06a092a62486c8dd0f9f39a7a26058d` | Underpaid: no signatures issued | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) | [explorer](https://testnet.zecblock.com/tx/0c3e538be90d9a5bfa60463314a6cd2dd06a092a62486c8dd0f9f39a7a26058d), [screenshot](docs/explorer/5-underpaid.png) |
 | +6 | 0.001 | 4,536,054 | `60d3f691c7b71deb4f7eb890f3e2967971c78ced8cf287d62b1d271c7b30ebf3` | Second payment, first of two | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) | [explorer](https://testnet.zecblock.com/tx/60d3f691c7b71deb4f7eb890f3e2967971c78ced8cf287d62b1d271c7b30ebf3), [screenshot](docs/explorer/6a-second.png) |
 | +6 | 0.001 | 4,536,061 | `d3529ffb9e1cedcc2cdc0bdb3216de385a0e255db60912ef31d6b700532ba652` | Second payment: still exactly 100 tokens | [failure paths](https://github.com/abdoulore/fare/actions/runs/40098320054) | [explorer](https://testnet.zecblock.com/tx/d3529ffb9e1cedcc2cdc0bdb3216de385a0e255db60912ef31d6b700532ba652), [screenshot](docs/explorer/6b-second.png) |
-| +7 | 0.001 | 4,536,656 | `5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0` | Hosted site, in a browser: demo payer paid, 100 tokens unblinded in the page, 3 calls, replay refused | [hosted run](docs/hosted/) | [explorer](https://testnet.zecblock.com/tx/5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0), [screenshot](docs/explorer/7-hosted.png) |
+| +7 | 0.001 | 4,536,656 | `5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0` | Hosted site, in a browser: demo payer paid, 100 tokens unblinded in the page, 3 calls, replay refused | [hosted run](docs/hosted/oct24/) | [explorer](https://testnet.zecblock.com/tx/5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0), [screenshot](docs/explorer/7-hosted.png) |
 | +9 | 0.001 | 4,541,068 | `584ef994733402213b267c772d0fcfd3b2b93ae7cbec9ba5e5c3d817d477745f` | Redesigned hosted site, in a browser: demo payer paid, 100 tokens unblinded in the page, 3 calls, replay refused | [hosted run](docs/hosted/redesign/) | [explorer](https://testnet.zecblock.com/tx/584ef994733402213b267c772d0fcfd3b2b93ae7cbec9ba5e5c3d817d477745f) |
 | +10 | 0.001 | 4,544,481 | `dddc693bfa2212358a8db44631a23ee5f5e36742b7b0bb1c0beac95ee7614dfe` | Hosted site after the Oct 26 fixes (saved orders, shared tabs, shared spent set): demo payer paid, 100 tokens unblinded in the page, 3 calls, replay refused | [hosted run](docs/hosted/oct26/) | [explorer](https://testnet.zecblock.com/tx/dddc693bfa2212358a8db44631a23ee5f5e36742b7b0bb1c0beac95ee7614dfe) |
 
-### The hosted run
+### Hosted runs
 
-On Oct 24, `web/e2e/hosted.spec.ts` drove a real browser through https://fare.moonrider.online: the 402 named the published key, the browser blinded 100 nonces, Fare's demo payer paid 0.001 TAZ in tx `5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0`, the purchase was paid at height 4,536,656 (one confirmation), the browser unblinded 100 tokens, 3 calls were served (answers simulated: no model key on the host), and the replayed token got `401 token_reused`. Afterwards the API counted 3 served and 1 `token_reused`; the issuer counted 1 pack and 100 tokens under the key. No request left the site and its three subdomains. Screenshots and the run record are in [`docs/hosted/`](docs/hosted/).
+`web/e2e/hosted.spec.ts` drives a real browser through https://fare.moonrider.online and pays with Fare's demo payer: the 402 names the published key, the browser blinds 100 nonces and orders, the payment confirms, the browser unblinds 100 tokens, makes 3 calls (answers simulated: no model key on the host) and replays one, which gets `401 token_reused`. Every run also checks that no request leaves the site and its three subdomains.
 
-On Oct 25 the same test ran against the redesigned site: Fare's demo payer paid 0.001 TAZ in tx `584ef994733402213b267c772d0fcfd3b2b93ae7cbec9ba5e5c3d817d477745f`, paid at height 4,541,068 as purchase +9, 100 tokens unblinded in the page, 3 calls served (answers simulated), and the replay got `401 token_reused`. No request left the site and its three subdomains. Purchase +8 was ordered on the hosted site and never paid, so it stays pending. Screenshots and the run record are in [`docs/hosted/redesign/`](docs/hosted/redesign/).
+| Date | Purchase | Txid | Site version | Record |
+| --- | --- | --- | --- | --- |
+| Oct 24 | +7, height 4,536,656 | `5d3b23ef7896b27a7d18d91da016a6f68be87152fc66c3f65bf35d0fbba817e0` | First version | [`docs/hosted/oct24/`](docs/hosted/oct24/) |
+| Oct 25 | +9, height 4,541,068 | `584ef994733402213b267c772d0fcfd3b2b93ae7cbec9ba5e5c3d817d477745f` | Sheet-of-stamps redesign | [`docs/hosted/redesign/`](docs/hosted/redesign/) |
+| Oct 26 | +10, height 4,544,481 | `dddc693bfa2212358a8db44631a23ee5f5e36742b7b0bb1c0beac95ee7614dfe` | Orders saved before payment, one token store across tabs, a spent set shared safely by processes | [`docs/hosted/oct26/`](docs/hosted/oct26/) |
+| Oct 27 | +16, height 4,546,503 | `e6b27e3a6ba4a0b6715239b6cbdf68dfdc332af12ea1768f8d3af3ca0d031075` | "Buy another sheet" works for a holder of unspent tokens | [`docs/hosted/oct27/`](docs/hosted/oct27/) |
 
-On Oct 26, after the owner deployed the fixes from the second review (orders saved before payment, one token store across tabs, a spent set shared safely by processes), the same test ran again: Fare's demo payer paid 0.001 TAZ in tx `dddc693bfa2212358a8db44631a23ee5f5e36742b7b0bb1c0beac95ee7614dfe`, paid at height 4,544,481 as purchase +10, 100 tokens unblinded in the page, 3 calls served (answers simulated), and the replay got `401 token_reused`. The API counted 9 spent tokens under the key afterwards: the 6 spent before the deploy, carried over from the old spent-set files, plus these 3. No request left the site and its three subdomains. Screenshots and the run record are in [`docs/hosted/oct26/`](docs/hosted/oct26/).
-
-Purchases +11 to +15 were made on the hosted site on Oct 26 while filming the demo video, all paid by Fare's demo payer: +11, +13 and +15 paid in full, +12 and +14 paid half on purpose to show the refusal, so they stay postage due with no tokens signed.
-
-On Oct 27, after the owner deployed the "Buy another sheet" fix (a holder of unspent tokens could not open the buy panel), the same test ran again: Fare's demo payer paid 0.001 TAZ in tx `e6b27e3a6ba4a0b6715239b6cbdf68dfdc332af12ea1768f8d3af3ca0d031075`, paid at height 4,546,503 as purchase +16, 100 tokens unblinded in the page, 3 calls served (answers simulated), and the replay got `401 token_reused`. No request left the site and its three subdomains. Screenshots and the run record are in [`docs/hosted/oct27/`](docs/hosted/oct27/).
+The other purchases on the live ledger: +8 was ordered and never paid, so it stays pending. +11 to +15 were bought on the hosted site on Oct 26 while recording the demo video, all paid by the demo payer: +11, +13 and +15 in full, +12 and +14 half on purpose to show the refusal, so they stay postage due with no tokens signed.
 
 ### Check it yourself
 
@@ -69,7 +72,7 @@ The scan needs a machine that can reach `testnet.zec.rocks`.
 
 ### What a chain observer sees
 
-The same transactions on a public testnet explorer ([ZecBlock](https://testnet.zecblock.com), screenshots in [`docs/explorer/`](docs/explorer/)): each is an Ironwood transaction with 2 actions, a fee of 0.0001 TAZ as the only value leaving the pool, and no sender, recipient, amount or memo. All nine are 9,166 bytes. A paid purchase, an underpaid one and a second payment look the same; only the published viewing key tells them apart.
+The transactions from +0 to +7 on a public testnet explorer ([ZecBlock](https://testnet.zecblock.com), screenshots in [`docs/explorer/`](docs/explorer/)): each is an Ironwood transaction with 2 actions, a fee of 0.0001 TAZ as the only value leaving the pool, and no sender, recipient, amount or memo. All nine are 9,166 bytes. A paid purchase, an underpaid one and a second payment look the same; only the published viewing key tells them apart.
 
 ![The underpaid purchase (+5) on a testnet explorer: block, fee, size and 2 Ironwood actions, nothing else](docs/explorer/5-underpaid.png)
 
@@ -77,7 +80,7 @@ The same transactions on a public testnet explorer ([ZecBlock](https://testnet.z
 
 | Part | State |
 | --- | --- |
-| Payments | Real testnet TAZ, paid from shielded notes by `fare-wallet`. Mainnet was not run (testnet by owner decision, Oct 24) |
+| Payments | Real testnet TAZ, paid from shielded notes by `fare-wallet`. Mainnet was not run: the project runs on testnet by design |
 | Payment detection | Real: trial decryption of real compact blocks from `testnet.zec.rocks`, by diversifier index, no memo, no transaction lookup |
 | Tokens | Real RFC 9578 type 2 (Blind RSA 2048, PSS) via `@cloudflare/privacypass-ts`; issuer signatures by native OpenSSL, each verified before release |
 | Redemption | Real: key id, challenge digest, signature and spent set checked on every call |
@@ -85,7 +88,7 @@ The same transactions on a public testnet explorer ([ZecBlock](https://testnet.z
 | Panel | Real counts from the issuer's purchase store and the origin's spent set |
 | Frontend (`web/`) | Real: tokens are blinded, unblinded and stored in the visitor's browser. Its end-to-end tests run against a stub scanner and a stub wallet, labeled as such in `web/e2e/stack.ts` |
 | Demo payer | When used, a real testnet payment from Fare's own `fare-wallet`, not the visitor's. The page says so on every payment |
-| Hosting | https://fare.moonrider.online: one VPS behind Caddy, set up with `deploy/` (owner decision D2). Answers there are simulated until the host has a model key |
+| Hosting | https://fare.moonrider.online: one VPS behind Caddy, set up with `deploy/`. Answers there are simulated until the host has a model key |
 | Explorer screenshots | Real: every proof txid on a public testnet explorer, in `docs/explorer/` |
 
 ## Threat model
@@ -133,7 +136,8 @@ Chain access needs a machine that can reach `testnet.zec.rocks`. On GitHub, the 
 | Workflow | Does |
 | --- | --- |
 | `testnet-wallet.yml` | Payer balance, funding address, or one payment |
-| `testnet-canary.yml` | Gate 1: paid and underpaid purchases, `fare-scanner check` |
+| `testnet-hosted.yml` | The hosted run above, against a deployed site |
+| `testnet-canary.yml` | The payment canary: paid and underpaid purchases, `fare-scanner check` |
 | `testnet-serve.yml` | A purchase minted over HTTP flips to paid |
 | `testnet-demo.yml` | The whole stack: agent pays, calls, replay refused, panel |
 | `testnet-failure-paths.yml` | Paid, underpaid and paid twice, then the watch-only verifier |
@@ -160,36 +164,34 @@ Tests: `cargo test` in `scanner/` and `wallet/`, `npm test` in `issuer/`, `sdk/`
 
 To host it: [`deploy/README.md`](deploy/README.md).
 
-## Status (Oct 24)
+## Packages
 
-| Part | State |
+| Package | What it is |
 | --- | --- |
-| `scanner/` (Rust) | Payment detection, `serve` sidecar with an id-free ledger, watch-only verifier. 36 tests, clippy clean |
-| `wallet/` (Rust) | `fare-wallet`, headless testnet payer. 26 tests, clippy clean |
-| `issuer/` (TypeScript) | Purchases API, 7-day epoch keys, native blind signing, CORS, public ledger. 23 tests |
-| `sdk/` (TypeScript) | Pin, 402 handling, order, collect, spend, follows key rotation; orders saved before payment, atomic state updates; browser-safe core. 18 tests |
-| `origin/` (TypeScript) | 402 challenge, invariant 9 redemption checks, spent set shared safely by processes on one host. 14 tests |
-| `demo/` (TypeScript) | LLM proxy behind the origin, paying agent, loopback panel, demo payer. 18 tests |
-| `web/` (TypeScript, React) | The frontend. 14 unit tests, 27 browser tests (flow, refusals, recovery after a closed tab, two tabs, layout, keyboard, accessibility) |
-| `token-canary/` (Node) | Privacy Pass proof: 100 tokens, 11 of 11 checks |
+| [`scanner/`](scanner/) (Rust) | `fare-scanner`: per-purchase addresses, payment detection from compact blocks, the `serve` sidecar with an id-free ledger, the watch-only verifier |
+| [`wallet/`](wallet/) (Rust) | `fare-wallet`: a headless testnet payer that pays only shielded, memo-free requests under a ceiling |
+| [`issuer/`](issuer/) (TypeScript) | Issuer directory, purchases API, 7-day epoch keys, native blind signing, public ledger |
+| [`sdk/`](sdk/) (TypeScript) | Client: pins the key, handles the 402, orders, collects, spends; follows key rotation; saves orders before payment; the core runs in browsers |
+| [`origin/`](origin/) (TypeScript) | Middleware for your API: the 402 challenge, the redemption checks, a spent set shared safely by processes on one host |
+| [`demo/`](demo/) (TypeScript) | An LLM proxy behind the origin, a paying agent, the server-view panel, the demo payer |
+| [`web/`](web/) (TypeScript, React) | The site: buyer flow with tokens made in the browser, developer docs, the live proof pages |
+| [`token-canary/`](token-canary/) (Node) | The Privacy Pass proof: 100 tokens issued and redeemed, refusal and unlinkability checks, native signing measured |
+| [`deploy/`](deploy/) | One-VPS deployment: Caddy, systemd units, setup script |
 
-CI runs every test on every push. The testnet workflows (`.github/workflows/testnet-*.yml`) run the chain-facing parts on GitHub runners.
+CI runs every package's tests on every push. Demo answers are **simulated** unless the demo host has a model API key: the API, the agent output and the panel all say so.
 
-Demo answers are **simulated** unless the demo host has a model API key: the API, the agent output and the panel all say so.
-
-## Start here
+## Documentation
 
 | File | For |
 | --- | --- |
-| `docs/SPEC.md` | The build spec: decisions, flow, privacy model, failure paths and the test that proves each |
-| `AGENTS.md` | Rules, invariants, verified facts, API contract |
-| `scanner/README.md` | The scanner, `serve`, and the canary |
-| `wallet/README.md` | The headless payer: commands, seed rules, refusals |
-| `issuer/README.md`, `sdk/README.md`, `origin/README.md` | The token side |
-| `demo/README.md` | Running the whole thing, and the demo payer |
-| `web/README.md` | The frontend |
-| `deploy/README.md` | Hosting on one VPS |
+| [`docs/SPEC.md`](docs/SPEC.md) | The design: decisions, flow, privacy model, and every failure path with the test that proves it |
+| [`docs/api.md`](docs/api.md) | The HTTP contract between client, issuer, origin and scanner |
+| [`docs/protocol.md`](docs/protocol.md) | Zcash, Ironwood and Privacy Pass facts the code relies on |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Layout, build and test commands, the privacy invariants every change keeps |
+| [`deploy/README.md`](deploy/README.md) | Hosting on one VPS |
 
-## Never commit
+`fare-scanner init` writes the merchant's seed to `fare-data/SEED-MOVE-OFFLINE.txt`, which is git-ignored: move it offline, since the running scanner needs only the viewing key. The payer seed lives only in the `FARE_PAYER_SEED` environment variable.
 
-`fare-data/` holds `SEED-MOVE-OFFLINE.txt`. It is git-ignored. Move the seed offline after `init`. The payer seed lives only in the `FARE_PAYER_SEED` environment variable.
+## Licence
+
+Fare is dual-licensed under the [MIT licence](LICENSE-MIT) or the [Apache License 2.0](LICENSE-APACHE), at your option.
