@@ -48,6 +48,10 @@ On Oct 25 the same test ran against the redesigned site: Fare's demo payer paid 
 
 On Oct 26, after the owner deployed the fixes from the second review (orders saved before payment, one token store across tabs, a spent set shared safely by processes), the same test ran again: Fare's demo payer paid 0.001 TAZ in tx `dddc693bfa2212358a8db44631a23ee5f5e36742b7b0bb1c0beac95ee7614dfe`, paid at height 4,544,481 as purchase +10, 100 tokens unblinded in the page, 3 calls served (answers simulated), and the replay got `401 token_reused`. The API counted 9 spent tokens under the key afterwards: the 6 spent before the deploy, carried over from the old spent-set files, plus these 3. No request left the site and its three subdomains. Screenshots and the run record are in [`docs/hosted/oct26/`](docs/hosted/oct26/).
 
+Purchases +11 to +15 were made on the hosted site on Oct 26 while filming the demo video, all paid by Fare's demo payer: +11, +13 and +15 paid in full, +12 and +14 paid half on purpose to show the refusal, so they stay postage due with no tokens signed.
+
+On Oct 27, after the owner deployed the "Buy another sheet" fix (a holder of unspent tokens could not open the buy panel), the same test ran again: Fare's demo payer paid 0.001 TAZ in tx `e6b27e3a6ba4a0b6715239b6cbdf68dfdc332af12ea1768f8d3af3ca0d031075`, paid at height 4,546,503 as purchase +16, 100 tokens unblinded in the page, 3 calls served (answers simulated), and the replay got `401 token_reused`. No request left the site and its three subdomains. Screenshots and the run record are in [`docs/hosted/oct27/`](docs/hosted/oct27/).
+
 ### Check it yourself
 
 With the published key only, no seed and nothing from us:

@@ -1,0 +1,212 @@
+{
+  "site": "https://fare.moonrider.online",
+  "at": "2026-10-27T05:50:40.695Z",
+  "issuer_health": {
+    "ok": true,
+    "key_id": "fed4e43313cb3cec0ebbc0715c737fcd3db78c81b80e22d5af93974f75903938",
+    "epoch": 2964,
+    "retires_at": 1793318400,
+    "scanned_to": 4546497
+  },
+  "api_health": {
+    "ok": true,
+    "model": "simulated",
+    "key_id": "fed4e43313cb3cec0ebbc0715c737fcd3db78c81b80e22d5af93974f75903938"
+  },
+  "payer_health": {
+    "ok": true,
+    "balance_zat": 98440000,
+    "empty": false,
+    "network": "test",
+    "packs_left_this_hour": 5
+  },
+  "payment": {
+    "txids": [
+      "e6b27e3a6ba4a0b6715239b6cbdf68dfdc332af12ea1768f8d3af3ca0d031075"
+    ],
+    "amount_zec": "0.001",
+    "mode": "full",
+    "paid_by": "fare-demo-wallet"
+  },
+  "answers": [
+    "Why does single use matter for a token?\n\nSIMULATED No model API key on this host, so this answer is canned. You asked 39 characters; a real deployment would send them to the model.",
+    "In one sentence, what is a blind signature?\n\nSIMULATED No model API key on this host, so this answer is canned. You asked 43 characters; a real deployment would send them to the model.",
+    "What does a shielded Zcash payment hide?\n\nSIMULATED No model API key on this host, so this answer is canned. You asked 40 characters; a real deployment would send them to the model."
+  ],
+  "ledger": {
+    "scanned_to": 4546503,
+    "rows": [
+      {
+        "height": 4535557,
+        "index": 0,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 100000,
+        "status": "no_record"
+      },
+      {
+        "height": 4535562,
+        "index": 1,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 50000,
+        "status": "no_record"
+      },
+      {
+        "height": 4535836,
+        "index": 2,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 100000,
+        "status": "no_record"
+      },
+      {
+        "height": 4535984,
+        "index": 3,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 100000,
+        "status": "no_record"
+      },
+      {
+        "height": 4536048,
+        "index": 4,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 100000,
+        "status": "no_record"
+      },
+      {
+        "height": 4536052,
+        "index": 5,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 50000,
+        "status": "no_record"
+      },
+      {
+        "height": 4536054,
+        "index": 6,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 100000,
+        "status": "no_record"
+      },
+      {
+        "height": 4536061,
+        "index": 6,
+        "payments": 1,
+        "price_zat": null,
+        "received_zat": 100000,
+        "status": "no_record"
+      },
+      {
+        "height": 4536656,
+        "index": 7,
+        "payments": 1,
+        "price_zat": 100000,
+        "received_zat": 100000,
+        "status": "paid"
+      },
+      {
+        "height": null,
+        "index": 8,
+        "payments": 0,
+        "price_zat": 100000,
+        "received_zat": 0,
+        "status": "pending"
+      },
+      {
+        "height": 4541068,
+        "index": 9,
+        "payments": 1,
+        "price_zat": 100000,
+        "received_zat": 100000,
+        "status": "paid"
+      },
+      {
+        "height": 4544481,
+        "index": 10,
+        "payments": 1,
+        "price_zat": 100000,
+        "received_zat": 100000,
+        "status": "paid"
+      },
+      {
+        "height": 4544813,
+        "index": 11,
+        "payments": 1,
+        "price_zat": 100000,
+        "received_zat": 100000,
+        "status": "paid"
+      },
+      {
+        "height": 4544925,
+        "index": 12,
+        "payments": 1,
+        "price_zat": 100000,
+        "received_zat": 50000,
+        "status": "underpaid"
+      },
+      {
+        "height": 4544944,
+        "index": 13,
+        "payments": 1,
+        "price_zat": 100000,
+        "received_zat": 100000,
+        "status": "paid"
+      },
+      {
+        "height": 4544995,
+        "index": 14,
+        "payments": 1,
+        "price_zat": 100000,
+        "received_zat": 50000,
+        "status": "underpaid"
+      },
+      {
+        "height": 4545003,
+        "index": 15,
+        "payments": 1,
+        "price_zat": 100000,
+        "received_zat": 100000,
+        "status": "paid"
+      },
+      {
+        "height": 4546503,
+        "index": 16,
+        "payments": 1,
+        "price_zat": 100000,
+        "received_zat": 100000,
+        "status": "paid"
+      }
+    ],
+    "keys": [
+      {
+        "key_id": "fed4e43313cb3cec0ebbc0715c737fcd3db78c81b80e22d5af93974f75903938",
+        "epoch": 2964,
+        "not_before": 1792627200,
+        "retires_at": 1793318400,
+        "packs": 7,
+        "issued": 700
+      }
+    ],
+    "pack": 100,
+    "price_zat": 100000
+  },
+  "origin_stats": {
+    "redeemed": 12,
+    "challenged": 23,
+    "refused": {
+      "token_reused": 5,
+      "bad_signature": 0,
+      "unknown_key": 0,
+      "wrong_challenge": 0,
+      "expired_epoch": 0
+    },
+    "spent_by_key": {
+      "fed4e43313cb3cec": 18
+    }
+  },
+  "external_requests": []
+}
