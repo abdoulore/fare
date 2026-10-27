@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Fare issuer: sells a fixed pack of Privacy Pass tokens for one shielded payment.",
+  "license": "MIT OR Apache-2.0",
   "type": "module",
   "engines": { "node": ">=22.18" },
   "scripts": {

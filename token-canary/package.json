@@ -1,14 +1,14 @@
 {
   "name": "fare-token-canary",
   "version": "1.0.0",
-  "description": "",
+  "description": "Fare token canary: proves Privacy Pass type 2 issuance and redemption for a 100-token pack, and measures native blind signing.",
   "scripts": {
     "canary": "node canary.mjs",
     "native": "node native-sign.mjs"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT OR Apache-2.0",
   "dependencies": {
     "@cloudflare/privacypass-ts": "^0.9.0"
   },

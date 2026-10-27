@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Fare demo: an LLM proxy behind the origin, an agent that pays and calls it, and the server-view panel.",
+  "license": "MIT OR Apache-2.0",
   "type": "module",
   "engines": {
     "node": ">=22.18"

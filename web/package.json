@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Fare frontend: buy a pack in shielded testnet ZEC, call the API with tokens unblinded in your browser, see what the server sees.",
+  "license": "MIT OR Apache-2.0",
   "type": "module",
   "engines": {
     "node": ">=22.18"
